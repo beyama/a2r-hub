@@ -1,0 +1,17 @@
+{
+  "pid_file": "run/a2r.pid",
+  "hosts": {
+    "192.168.1.100": {
+      "osc_udp": { "port": 5000, "mdns": true },
+      "osc_tcp": { "port": 5001 },
+      "brandt_udp": { "port": 3001 },
+      "http": { "port": 8080 }
+    }
+  },
+  "extensions": {
+    "http_server": {},
+    "brandt_udp_server": {},
+    "osc_udp_server": {},
+    "osc_tcp_server": {}
+  }
+}

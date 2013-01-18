@@ -1,0 +1,25 @@
+{
+  "name": "a2r-hub",
+  "version": "0.0.1",
+  "dependencies": {
+    "a2r-osc": "*",
+    "node-a2r-slip": "*",
+    "coffee-script": "*",
+    "winston": "*",
+    "winston-syslog": "*",
+    "optimist": "*",
+    "summer": "*",
+    "async": "*",
+    "underscore.string": "*",
+    "express": "3.0.6",
+    "jade": "*",
+    "less-middleware": "*",
+    "cookie": "*",
+    "cookie-signature": "*"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "should": "*",
+    "coffee-script": "*"
+  }
+}
