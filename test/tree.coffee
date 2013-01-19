@@ -180,20 +180,3 @@ describe "Tree.Node", ->
     it "should unregister node from tree", ->
       node.dispose()
       tree.nodes.should.have.length 0
- 
-    it "should emit 'dispose' with node as first argument", ->
-      called = false
- 
-      fn = (n)->
-        n.should.be.instanceof Tree.Node
-        called = true
- 
-      node.on "dispose", fn
- 
-      node.dispose()
-      called.should.be.true
- 
-    it "should remove all event listener", ->
-      node.on "error", ->
-      node.dispose()
-      node.listeners("error").should.have.length 0

@@ -49,7 +49,7 @@ class UdpServer extends Server
       @logger.error("#{@constructor.name}: Couldn't create client connection for `#{rinfo.address}:#{rinfo.port}`")
       @logger.error(e.stack)
       client.close() if client
-      session.close()
+      session.dispose()
       return
 
     client

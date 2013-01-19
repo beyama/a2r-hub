@@ -1,5 +1,6 @@
 exports = module.exports
 exports.Tree = require "./tree"
+exports.BaseObject = require "./base_object"
 exports.Hub = require "./hub"
 exports.NodeDescriptor = require "./node_descriptor"
 exports.Server = require "./server"

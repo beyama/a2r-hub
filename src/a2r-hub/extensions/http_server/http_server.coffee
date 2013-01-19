@@ -37,7 +37,7 @@ class HttpServer extends hub.net.HttpServer
         catch e
           @logger.error("HttpServer: Error registering client")
           @logger.error(e.stack)
-          session.close()
+          session.dispose()
       else
         socket.close(403, message)
 

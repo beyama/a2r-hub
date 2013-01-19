@@ -67,13 +67,13 @@ describe "hub.net.Connection", ->
         it "should register connection on session", ->
           session.connections.should.include connection
 
-        it "should register `onSessionClose` event handler on session `close` event", (done)->
-          session.listeners("close").should.include connection.onSessionClose
+        it "should register `onSessionDispose` event handler on session `dispose` event", (done)->
+          session.listeners("dispose").should.include connection.onSessionDispose
 
-          session.on "close", ->
+          session.on "dispose", ->
             connection.closed.should.be.true
             done()
-          session.close()
+          session.dispose()
 
     describe "with invalid options", ->
       it "should throw an error", ->

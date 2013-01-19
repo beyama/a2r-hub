@@ -67,7 +67,7 @@ class Connection extends EventEmitter
       @session.connections.push(@)
 
       # close this connection on session 'close'
-      @session.on("close", @onSessionClose)
+      @session.on("dispose", @onSessionDispose)
 
     @address = url.format
       protocol: @protocol
@@ -75,7 +75,7 @@ class Connection extends EventEmitter
       hostname: @ip
       port:     @port
 
-  onSessionClose: => @close()
+  onSessionDispose: => @close()
 
   close: ->
     return if @closed
@@ -84,7 +84,7 @@ class Connection extends EventEmitter
       # remove this connection from the session
       index = @session.connections.indexOf(@)
       @session.connections.splice(index, 1) if index > -1
-      @session.removeListener("close", @onSessionClose)
+      @session.removeListener("dispose", @onSessionDispose)
 
     @closed = true
     @emit("close")

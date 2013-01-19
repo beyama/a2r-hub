@@ -46,7 +46,7 @@ class TcpServer extends Server
       @logger.error("#{@constructor.name}: Couldn't create client connection for `#{socket.remoteAddress}:#{socket.remotePort}`")
       @logger.error(e.stack)
       client.close() if client
-      session.close()
+      session.dispose()
       return
 
     client

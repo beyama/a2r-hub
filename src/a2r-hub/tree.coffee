@@ -1,4 +1,5 @@
-EventEmitter = require("events").EventEmitter
+BaseObject = require "./base_object"
+
 address = require("./address")
 
 _filterListAndDescendants = (list, pattern)->
@@ -31,36 +32,22 @@ _filterListAndDescendants = (list, pattern)->
         ret.push.apply(ret, children)
   ret
 
-class Node extends EventEmitter
+class Node extends BaseObject
   constructor: (parent, token, options)->
     if parent and not address.isValidToken(token)
       throw new Error("Invalid token `#{token}`")
 
-    @parent  = parent
-    @token   = token
-    @root    = @_root()
-    @address = @_address()
-    @id      = @root.nextId()
+    @token = token
+
+    if parent
+      @id = parent.root.nextId()
+      @address = "#{parent.address}/#{@token}"
+    else
+      @address = ""
+
+    super(parent)
 
     @configure(options) if options
-
-    if @parent
-      # add to parent
-      @parent.addChild(@)
-
-  _root: ->
-    return @ unless @parent
-
-    parent = @parent
-    while parent.parent
-      parent = parent.parent
-    parent
-
-  _address: ->
-    if @parent
-      "#{@parent.address}/#{@token}"
-    else
-      ""
 
   configure: (options)->
     for k, v of options
@@ -70,38 +57,29 @@ class Node extends EventEmitter
         @[k] = v
 
   addChild: (child)->
-    unless @children
-      @children = [child]
-      @childByToken = {}
+    if child instanceof Node
+      @childByToken ||= {}
       @childByToken[child.token] = child
-    else
-      if @childByToken[child.token]
-        throw new Error("Child with token `#{child.token}` already exist")
-      @children.push(child)
-      @childByToken[child.token] = child
-    try
       @root.registerAncestor(child)
-    catch e
-      @removeChild(child)
-      throw e
+      super(child)
+    else
+      super(child)
 
   removeChild: (child)->
-    return false unless @children
-
-    index = @children.indexOf(child)
-    return false if index < 0
-
-    delete @childByToken[child.token]
-    @children.splice(index, 1)
-    @root.unregisterAncestor(child)
-    true
+    if (ret = super(child))
+      if child instanceof Node
+        delete @childByToken[child.token]
+        @root.unregisterAncestor(child)
+    return ret
 
   getChild: (token)->
+    return unless @childByToken
+
     if token instanceof RegExp
-      for child in @children when token.test(child.token)
+      for t, child of @childByToken when token.test(t)
         child
     else
-      @childByToken?[token]
+      @childByToken[token]
 
   createChild: (token, options)->
     @root._createNode(@, token, options)
@@ -111,19 +89,6 @@ class Node extends EventEmitter
       node.configure(options) if options
       return node
     @createChild(token, options)
-
-  # Dispose each child and unregister from parent
-  dispose: ->
-    return if @disposed
-
-    @disposed = true
-
-    if @children
-      child.dispose() for child in @children
-    @emit("dispose", @)
-    @root.emit("node:dispose", @)
-    @parent.removeChild(@) if @parent
-    @removeAllListeners()
 
 Node::getChildren = Node::getChild
 
@@ -151,12 +116,13 @@ class Tree extends Node
     if @nodeByAddress[node.address]
       throw new Error("Node with address `#{node.address}` already exist")
 
+    # index ancestor node
     @nodes.push(node)
     @nodeById[node.id] = node
     @nodeByAddress[node.address] = node
-
     @nodesByToken[node.token] ||= []
     @nodesByToken[node.token].push(node)
+
     @emit("node", node)
     true
 
@@ -164,9 +130,10 @@ class Tree extends Node
     index = @nodes.indexOf(node)
     return false if index < 0
 
+    # remove ancestor node from index
+    @nodes.splice(index, 1)
     delete @nodeById[node.id]
     delete @nodeByAddress[node.address]
-    @nodes.splice(index, 1)
 
     if @nodesByToken[node.token].length is 1
       delete @nodesByToken[node.token]

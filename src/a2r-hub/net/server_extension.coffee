@@ -56,7 +56,7 @@ class ServerExtension extends hub.Extension
 
               @connections.createServer options, (error, server)=>
                 if error
-                  session.close()
+                  session.dispose()
                   @logger.error("#{@extensionName}: Host `#{host}` could not be started - #{error.message}")
                   @logger.debug(error.stack)
                 else
@@ -66,12 +66,12 @@ class ServerExtension extends hub.Extension
                   server.on "close", =>
                     index = @server.indexOf(server)
                     @server.splice(index, 1) if index > -1
-                    session.close()
+                    session.dispose()
                     context.shutdown()
 
                 callback()
             catch error
-              session.close()
+              session.dispose()
               context.shutdown()
               @logger.error("#{@extensionName}: Host `#{host}` could not be started - #{error.message}")
               @logger.debug(error.stack)

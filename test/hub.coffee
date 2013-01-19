@@ -11,67 +11,47 @@ describe "Hub", ->
     it "should create an instance of Hub.Node", ->
       hub.createNode("/a2r/hub").should.be.instanceof Hub.Node
 
-  describe ".registerSession", ->
-
-    it "should register a session in session registry", ->
-      session = new Hub.Session(hub)
-      hub.registerSession(session)
-      hub.sessionById[session.id].should.be.equal session
-      hub.sessions.should.have.length 1
-      hub.sessions.indexOf(session).should.be.equal 0
-
-    it "should throw an error if session already exist", ->
-      session = hub.createSession()
-      (-> hub.registerSession(session) ).should.throw()
-
-  describe ".unregisterSession", ->
-    
-    it "should remove a session from session registry", ->
-      hub.createSession()
-      session = hub.createSession()
-
-      hub.unregisterSession(session).should.be.true
-      hub.sessions.should.have.length 1
-      hub.sessions.indexOf(session).should.be.equal -1
-
-    it "should return false if session isn't registered", ->
-      session = new Hub.Session(hub)
-      hub.unregisterSession(session).should.be.false
-
   describe ".createSession", ->
     
-    it "should initialize and register a session and emit 'session' with session as argument", ->
+    it "should create a new Hub.Session with hub as parent and emit `session`", ->
       arg1 = null
 
-      hub.on "session", (s)->
-        arg1 = s
+      hub.on "session", (s)-> arg1 = s
 
       session = hub.createSession()
       session.should.be.instanceof Hub.Session
-      session.hub.should.be.equal hub
+      session.parent.should.be.equal hub
       session.should.be.equal arg1
 
-  describe ".shutdown", ->
+  describe ".addChild", ->
 
-    it "should emit 'shutdown' and close all sessions", ->
+    it "should register session if child is an instance of Hub.Session", ->
       session = hub.createSession()
+      hub.sessions.indexOf(session).should.be.equal 0
+      hub.sessionById[session.id].should.be.equal session
+
+  describe ".removeChild", ->
+
+    it "should unregister session if child is an instance of Hub.Session", ->
+      session = hub.createSession()
+      session.dispose()
+      hub.sessions.indexOf(session).should.be.equal -1
+      should.not.exist hub.sessionById[session.id]
+
+  describe ".dispose", ->
+
+    it "should close all sessions", ->
+      for i in [0..9]
+        hub.createSession()
+
       called = 0
       
-      hub.on "session:close", (s)->
-        session.should.be.equal s
-        called++
+      hub.on "session:dispose", -> called++
 
-      hub.on "shutdown", ->
-        called++
+      hub.on "dispose", -> called++
 
-      hub.shutdown()
-      called.should.be.equal 2
-
-    it "should remove all listeners", ->
-      hub.on "error", ->
-      hub.listeners("error").should.have.length 1
-      hub.shutdown()
-      hub.listeners("error").should.have.length 0
+      hub.dispose()
+      called.should.be.equal 11
 
   describe ".send", ->
     session = null
@@ -114,28 +94,24 @@ describe "Hub", ->
   
     beforeEach -> session = hub.createSession()
   
-    describe ".close", ->
+    describe ".dispose", ->
   
-      it "should emit 'close' on `this` and 'channel:close' with session as first argument on @hub", ->
+      it "should emit 'session:dispose' on @hub", ->
         called = 0
 
-        session.on "close", -> called++
-        hub.on "session:close", (session)->
+        session.on "dispose", -> called++
+
+        hub.on "session:dispose", (session)->
           session.should.be.instanceof Hub.Session
           called++
   
-        session.close()
+        session.dispose()
         called.should.be.equal 2
   
       it "should dispose each node", ->
         node1 = session.createNode("/1")
         node2 = session.createNode("/2")
   
-        session.close()
+        session.dispose()
         node1.disposed.should.be.true
         node2.disposed.should.be.true
-  
-      it "should remove all listeners", ->
-        session.on "error", ->
-        session.close()
-        session.listeners("error").should.have.length 0

@@ -28,7 +28,7 @@ module.exports = (argv)->
   # and register hub in context
   context.set("hub", _hub)
 
-  context.on("shutdown", -> _hub.shutdown())
+  context.on("shutdown", -> _hub.dispose())
 
   # register config file reader
   context.register("config", hub.configFileLoader)
