@@ -14,15 +14,11 @@ class TcpServer extends Server
     @socket = @createServer()
     @initSocket(@socket)
 
+    @on("dispose", => @socket.close() if @listening)
+
   listen: -> @socket.listen(@port, @ip)
 
   createServer: -> net.createServer(@onSocketConnection.bind(@))
-
-  close: ->
-    return if @closed
-    
-    super
-    @socket.close() if @listening
 
   createClient: (socket)->
     clientClass = @constructor.clientClass
@@ -41,11 +37,10 @@ class TcpServer extends Server
     try
       client = new clientClass(options)
       @logger.info("#{@constructor.name}: New connection from `#{client.address}`")
-      @registerClient(client)
     catch e
       @logger.error("#{@constructor.name}: Couldn't create client connection for `#{socket.remoteAddress}:#{socket.remotePort}`")
-      @logger.error(e.stack)
-      client.close() if client
+      @logger.debug(e.stack)
+      client.dispose() if client
       session.dispose()
       return
 

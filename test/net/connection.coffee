@@ -28,7 +28,7 @@ describe "hub.net.Connection", ->
     describe "with valid options", ->
 
       beforeEach ->
-        connection = new Connection(options)
+        connection = new Connection(null, options)
 
       it "should set ip", ->
         connection.ip.should.be.equal options.ip
@@ -50,7 +50,7 @@ describe "hub.net.Connection", ->
 
       it "should cast option `port` to number", ->
         options.port = "8000"
-        connection = new Connection(options)
+        connection = new Connection(null, options)
         connection.port.should.be.equal 8000
 
       it "should set property `hub` and `logger` from context", ->
@@ -71,7 +71,7 @@ describe "hub.net.Connection", ->
           session.listeners("dispose").should.include connection.onSessionDispose
 
           session.on "dispose", ->
-            connection.closed.should.be.true
+            connection.disposed.should.be.true
             done()
           session.dispose()
 
@@ -80,24 +80,15 @@ describe "hub.net.Connection", ->
         for option in ["ip", "port", "type", "protocol", "context"]
           delete options[option]
 
-          (-> new Connection(options)).should.throw()
+          (-> new Connection(null, options)).should.throw()
 
       it "should throw an error if session isn't an instance of Hub.Session", ->
           options.session = {}
-          (-> new Connection(options)).should.throw()
+          (-> new Connection(null, options)).should.throw()
 
-  describe "close", ->
-    beforeEach -> connection = new Connection(options)
+  describe ".dispose", ->
+    beforeEach -> connection = new Connection(null, options)
 
-    it "should emit `close`", (done)->
-      connection.on("close", done)
-      connection.close()
-
-    it "should remove all listeners", ->
-      connection.on("foo", ->)
-      connection.close()
-      connection.listeners("foo").should.have.length 0
-
-    it "should remove connection from session on connection close", ->
-      connection.close()
+    it "should remove connection from session", ->
+      connection.dispose()
       session.connections.should.not.include connection

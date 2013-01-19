@@ -22,14 +22,10 @@ class ServerMock extends Server
     options.type = "udp"
     @socket = new EventEmitter
     @initSocket(@socket)
+    @on("dispose", => @socket.emit("close") if @listening)
     super
 
   listen: -> @socket.emit("listening")
-
-  close: ->
-    if @listening
-      @socket.emit("close")
-    super
 
 describe "a2rHub.net.ConnectionService", ->
   service = null
@@ -137,7 +133,7 @@ describe "a2rHub.net.ConnectionService", ->
       service.createServer "mock://127.0.0.1:8000", (err, server)->
         return done(err) if err
 
-        server.on("close", done)
+        server.on("dispose", -> done())
         service.dispose(->)
 
     it "should stop each client", (done)->
@@ -146,7 +142,7 @@ describe "a2rHub.net.ConnectionService", ->
 
         service.registerConnection(client)
 
-        client.on("close", done)
+        client.on("dispose", -> done())
         service.dispose(->)
 
   describe "registry methods", ->
@@ -176,9 +172,9 @@ describe "a2rHub.net.ConnectionService", ->
         service.registerConnection(connection)
         (-> service.registerConnection(connection) ).should.throw()
 
-      it "should unregister connection on connection `close` event", ->
+      it "should unregister connection on connection `dispose` event", ->
         service.registerConnection(connection)
-        connection.close()
+        connection.dispose()
         should.not.exist service.getConnection(connection.address)
 
     describe "unregisterConnection", ->

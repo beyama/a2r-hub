@@ -62,8 +62,8 @@ class ServerExtension extends hub.Extension
                 else
                   @server.push(server)
 
-                  # add close handler
-                  server.on "close", =>
+                  # add dispose handler
+                  server.on "dispose", =>
                     index = @server.indexOf(server)
                     @server.splice(index, 1) if index > -1
                     session.dispose()

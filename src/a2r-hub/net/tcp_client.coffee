@@ -3,15 +3,12 @@ net    = require "net"
 assert = require "assert"
 _      = require "underscore"
 
-DEFAULT_OPTIONS =
-  type: "tcp"
-  protocol: "tcp:"
-
 class TcpClient extends Client
+  @defaultOptions = { type: "tcp", protocol: "tcp:" }
 
   constructor: (options)->
-    options = _.extend({}, options, DEFAULT_OPTIONS)
     super(options)
+    @on("dispose", => @_closeSocket())
 
   # connect socket events with client handlers
   initSocket: ->
@@ -24,16 +21,12 @@ class TcpClient extends Client
     assert.ok(@socket, "Option `socket` must be given")
     @initSocket()
     @connected = true
+    super
 
-  initAsClient: ->
+  initAsClient: -> super
 
   # close the socket
   _closeSocket: -> @socket.end()
-
-  # close the connection
-  close: ->
-    @_closeSocket()
-    super
 
   # open the connection
   open: (callback)->
@@ -74,6 +67,6 @@ class TcpClient extends Client
   onSocketError: (error)-> @emit("error", error)
 
   # handle socket `close` event
-  onSocketClose: -> @close()
+  onSocketClose: -> @dispose()
 
 module.exports = TcpClient

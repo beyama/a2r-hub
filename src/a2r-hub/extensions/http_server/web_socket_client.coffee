@@ -35,7 +35,7 @@ class WebSocketClient extends hub.net.Client
     @logger.error(error.stack)
     @emit("error", error)
 
-  onSocketClose: -> @close()
+  onSocketClose: -> @dispose()
 
   onSocketMessage: (message)->
     try

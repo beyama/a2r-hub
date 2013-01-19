@@ -1,23 +1,39 @@
-hub    = require "../../"
 should = require "should"
 _      = require "underscore"
+EventEmitter = require("events").EventEmitter
 
-Client = hub.net.Client
+hub    = require "../../"
 
-class MockClient extends Client
+class MockClient extends hub.net.Client
   constructor: (options={})->
     options = _.extend(options, { ip: "127.0.0.1", port: 8000, type: "udp", protocol: "udp"})
     super(options)
 
-  initAsServerClient: -> @_initAsServerClient = true
+  initAsServerClient: ->
+    @_initAsServerClient = true
+    super
 
-  initAsClient: -> @_initAsClient = true
+  initAsClient: ->
+    @_initAsClient = true
+    super
+
+class MockServer extends hub.net.Server
+  constructor: (options)->
+    options = _.extend(options, { ip: "127.0.0.1", port: 8000, type: "udp", protocol: "udp:"})
+    super(options)
+    @socket = new EventEmitter
+    @initSocket(@socket)
+
+  listen: -> @socket.emit("listening")
 
 describe "hub.net.Client", ->
 
   context = null
 
-  beforeEach -> context = hub.applicationContext()
+  beforeEach (done)->
+    context = hub.applicationContext()
+
+    context.resolve "connectionService", (err)-> done(err)
 
   afterEach -> context.shutdown()
 
@@ -29,7 +45,7 @@ describe "hub.net.Client", ->
       should.not.exist client._initAsServerClient
 
     it "should call initAsServer if a server is given", ->
-      server = {}
+      server = new MockServer(context: context)
       client = new MockClient(context: context, server: server)
       client._initAsServerClient.should.be.true
       client.server.should.be.equal server

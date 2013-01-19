@@ -1,10 +1,10 @@
-EventEmitter = require("events").EventEmitter
 assert = require "assert"
 isIP   = require("net").isIP
 url    = require "url"
 _      = require "underscore"
 
-Hub = require("../hub")
+Hub = require "../hub"
+BaseObject = require "../base_object"
 
 # Base class of all A2R Hub network connections.
 #
@@ -15,9 +15,6 @@ Hub = require("../hub")
 # ** type: Protocol (udp or tcp)
 # ** protocol: The protocol of this connection (e.g. "wss:", "udp+osc:", ...)
 # ** session: The session belonging to the connection (optional)
-#
-# Events:
-# * close: Emitted if the connection gets closed.
 #
 # Properties:
 # * ip: The IP-address of the connection
@@ -34,8 +31,8 @@ Hub = require("../hub")
 #
 # Class properties:
 # * defaultOptions: Default options for the constructor
-class Connection extends EventEmitter
-  constructor: (options)->
+class Connection extends BaseObject
+  constructor: (parent, options)->
     assert.ok(typeof options is 'object', "Options must be given")
 
     options = _.extend({}, options, @constructor.defaultOptions)
@@ -75,10 +72,12 @@ class Connection extends EventEmitter
       hostname: @ip
       port:     @port
 
-  onSessionDispose: => @close()
+    super(parent)
 
-  close: ->
-    return if @closed
+  onSessionDispose: => @dispose()
+
+  dispose: ->
+    return if @disposed
 
     if @session
       # remove this connection from the session
@@ -86,9 +85,6 @@ class Connection extends EventEmitter
       @session.connections.splice(index, 1) if index > -1
       @session.removeListener("dispose", @onSessionDispose)
 
-    @closed = true
-    @emit("close")
-    @removeAllListeners()
-
+    super
 
 module.exports = Connection

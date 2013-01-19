@@ -28,9 +28,9 @@ describe "hub.net.TcpServer and hub.net.TcpClient", ->
 
   afterEach -> context.shutdown()
 
-  describe "the server", ->
+  describe "the servers", ->
 
-    describe ".onSocketConnection", ->
+    describe ".onSocketConnection method", ->
 
       it "should create a new TCP client", (done)->
         client = null
@@ -47,23 +47,21 @@ describe "hub.net.TcpServer and hub.net.TcpClient", ->
         client.open (err)->
           return done(err) if err
 
-    describe ".close", ->
+    describe ".dispose method", ->
       it "should close the socket", (done)->
         server.socket.on("close", done)
-        server.socket.on("error", done)
+        server.dispose()
 
-        server.close()
+  describe "the clients", ->
 
-  describe "the client", ->
-
-    describe ".onSocketClose", ->
-      it "should close the connection on socket close", (done)->
+    describe ".onSocketClose method", ->
+      it "should dispose the connection on socket close", (done)->
         connections.createClient SERVER_ADDRESS, (err, c)->
           return done(err) if err
-          c.on("close", done)
+          c.on("dispose", -> done())
           c.socket.end()
 
-    describe ".onSocketError", ->
+    describe ".onSocketError method", ->
       it "should emit `error` on socket error", (done)->
         connections.createClient SERVER_ADDRESS, (err, c)->
           return done(err) if err
@@ -75,7 +73,7 @@ describe "hub.net.TcpServer and hub.net.TcpClient", ->
 
           c.socket.emit("error", error)
 
-    describe ".send", ->
+    describe ".send method", ->
       it "should send a complete buffer", (done)->
         buffer = new Buffer("Hello")
 
@@ -100,7 +98,7 @@ describe "hub.net.TcpServer and hub.net.TcpClient", ->
           return done(err) if err
           c.send(buffer, 2, 2)
 
-    describe ".close", ->
+    describe ".dispose method", ->
 
       it "should close the socket", (done)->
         connections.createClient SERVER_ADDRESS, (err, c)->
@@ -108,4 +106,4 @@ describe "hub.net.TcpServer and hub.net.TcpClient", ->
 
           c.socket.on "close", ->
             done()
-          c.close()
+          c.dispose()

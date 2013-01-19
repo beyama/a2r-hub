@@ -46,7 +46,8 @@ class OscTcpClient extends hub.net.TcpClient
 
   onOscMessage: (message)-> @hub.send(message)
 
-  close: ->
+  dispose: ->
+    return if @disposed
     @sendOSC(new osc.Message("/a2r/close", osc.Impulse))
     super
 

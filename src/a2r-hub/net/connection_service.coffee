@@ -120,8 +120,8 @@ class ConnectionService
     assert.ok(con instanceof Connection, "Argument must be an instance of `Connection`")
     assert.ok(@connections[con.address] is undefined, "Connection `#{con.address}` already exist")
 
-    # unregister connection on close
-    con.on("close", => @unregisterConnection(con))
+    # unregister connection on dispose
+    con.on("dispose", => @unregisterConnection(con))
     # register connection
     @connections[con.address] = con
 
@@ -147,8 +147,9 @@ class ConnectionService
 
   hasConnection: (address)-> !!@getConnection(address)
 
-  # close all server connections
+  # close all server and client connections
   dispose: (callback)->
+    callback ||= ->
     servers = []
 
     for addr, connection of @connections when connection instanceof Server
@@ -158,9 +159,9 @@ class ConnectionService
     async.forEach servers, ((s, fn)-> s.stop(fn)), (error)=>
       return callback(error) if error
 
-      # close all remaining connections
+      # dispose all remaining connections
       for addr, connection of @connections when not (connection instanceof Server)
-        connection.close()
+        connection.dispose()
       callback()
 
 module.exports = ConnectionService

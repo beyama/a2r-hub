@@ -8,10 +8,8 @@ Client = hub.net.Client
 
 class MockClient extends Client
   constructor: (options={})->
-    options = _.extend(options, { ip: "127.0.0.1", port: 8001, type: "udp", protocol: "udp"})
+    options = _.extend({ ip: "127.0.0.1", port: 8001, type: "udp", protocol: "udp"}, options)
     super(options)
-
-  initAsServerClient: ->
 
 class MockServer extends Server
   constructor: (options)->
@@ -69,7 +67,7 @@ describe "hub.net.Server", ->
       server.start ->
 
     it "should connect socket `close` event with `Server::onSocketClose`", (done)->
-      server.on "close", ->
+      server.on "dispose", ->
         server.listening.should.be.false
         should.not.exist server.connections.getConnection(server.address)
         done()
@@ -77,35 +75,24 @@ describe "hub.net.Server", ->
       server.start ->
         server.socket.emit("close")
 
-  describe "registerClient", ->
-    it "should register a client and emit `client`", (done)->
+  describe "addChild", ->
+
+    it "should register a client", (done)->
       server.on "client", (c)->
-        c.should.be.equal client
-        server.getClient(c.address).should.be.equal client
-        server.clients.should.have.length 1
+        c.should.be.an.instanceof MockClient
+        server.clients.should.have.length 2
         done()
 
-      server.registerClient(client)
+      new MockClient(port: 8002, context: context, server: server)
 
-    it "should add an on `close` handler to the client to remove the client from connection registry on client.close", ->
-      server.registerClient(client)
-      client.close()
-      should.not.exist server.getClient(client.address)
+  describe "removeChild", ->
 
-  describe "unregisterClient", ->
     it "should unregister a client", ->
-      server.registerClient(client)
-      server.unregisterClient(client)
-
-      server.clients.should.have.length 0
+      server.clients.should.include client
+      client.dispose()
+      server.clients.should.not.include client
       should.not.exist server.getClient(client.address)
       should.not.exist connections.getConnection(client.address)
-      
-  describe "close", ->
-    it "should close all connections", (done)->
-      client.on("close", done)
-      server.registerClient(client)
-      server.close()
 
   describe "start", ->
 
@@ -137,7 +124,7 @@ describe "hub.net.Server", ->
 
     it "should call the callback with an error if the socket emits `error` during stop", (done)->
       error = new Error("Boom")
-      server.close = -> @socket.emit("error", error)
+      server.dispose = -> @socket.emit("error", error)
 
       server.start (e)->
         return done(e) if e

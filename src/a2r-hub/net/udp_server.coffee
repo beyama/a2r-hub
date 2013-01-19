@@ -15,6 +15,7 @@ class UdpServer extends Server
     @initSocket(@socket)
 
     @clientsByIPAndPort = {}
+    @on("dispose", => @socket.close() if @listening)
 
   initSocket: (socket)->
     super(socket)
@@ -22,11 +23,15 @@ class UdpServer extends Server
 
   listen: -> @socket.bind(@port, @ip)
 
-  close: ->
-    return if @closed
-    
+  addChild: (child)->
+    if child instanceof UdpServer
+      @clientsByIPAndPort["#{child.ip}:#{child.port}"] = child
     super
-    @socket.close() if @listening
+
+  removeChild: (child)->
+    if child instanceof UdpServer
+      delete @clientsByIPAndPort["#{child.ip}:#{child.port}"]
+    super
 
   createClient: (rinfo)->
     clientClass = @constructor.clientClass
@@ -44,25 +49,18 @@ class UdpServer extends Server
     try
       client = new clientClass(options)
       @logger.info("#{@constructor.name}: New connection from `#{client.address}`")
-      @registerClient(client)
     catch e
       @logger.error("#{@constructor.name}: Couldn't create client connection for `#{rinfo.address}:#{rinfo.port}`")
-      @logger.error(e.stack)
-      client.close() if client
+      @logger.debug(e.stack)
+      client.dispose() if client
       session.dispose()
       return
 
     client
 
   onSocketMessage: (data, rinfo)->
-    key = "#{rinfo.address}:#{rinfo.port}"
-    client = @clientsByIPAndPort[key]
-
-    unless client
-      client = @createClient(rinfo)
-      @clientsByIPAndPort[key] = client
-      client.on("close", => delete @clientsByIPAndPort[key])
-
+    client = @clientsByIPAndPort["#{rinfo.address}:#{rinfo.port}"]
+    client = @createClient(rinfo) unless client
     client.emit("message", data)
 
 module.exports = UdpServer

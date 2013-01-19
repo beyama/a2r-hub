@@ -9,12 +9,15 @@ class UdpClient extends Client
 
   constructor: (options)->
     super(options)
+    @on("dispose", => @socket.close() unless @server)
 
   initAsServerClient: ->
     @socket = @server.socket
+    super
 
   initAsClient: ->
     @socket = dgram.createSocket(if @ipVersion is 4 then "udp4" else "udp6")
+    super
 
   open: (callback)-> callback()
 
@@ -28,9 +31,5 @@ class UdpClient extends Client
     port = Number(port)
     assert.ok(port isnt NaN, "Port must be a number")
     @outport = port
-
-  close: ->
-    @socket.close() unless @server
-    super
 
 module.exports = UdpClient

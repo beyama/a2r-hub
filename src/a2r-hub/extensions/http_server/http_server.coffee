@@ -19,8 +19,8 @@ class HttpServer extends hub.net.HttpServer
     @wss = new WebSocketServer(server: @socket)
     @wss.on("connection", @onWebSocketConnection.bind(@))
 
-  close: ->
-    return if @closed
+  dispose: ->
+    return if @disposed
     @wss.close()
     super
 

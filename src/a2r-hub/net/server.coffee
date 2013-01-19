@@ -1,21 +1,23 @@
 _ = require "underscore"
 
-Connection = require("./connection")
+Connection = require "./connection"
+Client     = require "./client"
 
 # Base class of all A2R Hub network server,
 # extends a2rHub.net.Connection.
 #
 # Events:
-# * client: Emitted on registering a new client connection with the client
-#   as first argument.
+# * close: emitted when the socket emits `close`
+# * error: emitted when the socket emits `error`
+# * listening: emitted when the socket emits `listening`
+# * client: emitted when a new client is connected
 #
 # Properties:
 # * connections: An instance of the a2rHub.net.ConnectionService.
 # * clients: A list of registered clients.
-# * closed: Is true if this server is closed.
 class Server extends Connection
   constructor: (options)->
-    super(options)
+    super(null, options)
 
     @connections = @context.get("connectionService")
 
@@ -49,7 +51,7 @@ class Server extends Connection
   # Stop the server.
   stop: (callback)->
     callback ||= ->
-    return callback() if @closed
+    return callback() if @disposed
 
     if @listening
       fn = (err)=>
@@ -59,46 +61,31 @@ class Server extends Connection
 
       @on("close", fn)
       @on("error", fn)
-      @close()
+      @dispose()
     else
-      @close()
+      @dispose()
       callback()
 
   listen: ->
     throw new Error("Abstract method `Server::listen` called")
 
-  # Register a client. This will emit "client" with client
-  # as first argument.
-  registerClient: (client)->
-    # register client connection
-    @connections.registerConnection(client)
-    @clientByAddress[client.address] = client
-    @clients.push(client)
-    # unregister client on close
-    client.once "close", => @unregisterClient(client)
-    # emit "client"
-    @emit "client", client
+  addChild: (child)->
+    # Register a client and emit `client` event.
+    if child instanceof Client
+      # register client connection
+      @connections.registerConnection(child)
+      @clients.push(child)
+      @clientByAddress[child.address] = child
+    super(child)
 
-  # Unregister client.
-  # This will be automatically called by client.close().
-  unregisterClient: (client)->
-    @connections.unregisterConnection(client)
-    delete @clientByAddress[client.address]
-    index = @clients.indexOf(client)
-    @clients.splice(index, 1) if index > -1
-
-  # Close the server connection.
-  #
-  # This will close all registered clients.
-  #
-  # Overwrite this to close your underlying server/socket.
-  close: ->
-    return if @closed
-    
-    super
-
-    for client in @clients[..]
-      client.close()
+  removeChild: (child)->
+    # Unregister client.
+    if child instanceof Client
+      @connections.unregisterConnection(child)
+      delete @clientByAddress[child.address]
+      index = @clients.indexOf(child)
+      @clients.splice(index, 1) if index > -1
+    super(child)
 
   # Callback to call if the server/socket is listening.
   onSocketListening: ->
@@ -112,7 +99,8 @@ class Server extends Connection
     @listening = false
     @connections.unregisterConnection(@)
     @logger.info("#{@constructor.name}: Server closed on '#{@ip}:#{@port}'")
-    @close()
+    @emit("close")
+    @dispose()
 
   onSocketError: (error)->
     @emit("error", error)

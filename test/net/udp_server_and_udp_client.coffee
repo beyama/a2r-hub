@@ -30,7 +30,7 @@ describe "hub.net.UdpServer and hub.net.UdpClient", ->
 
   describe "the server", ->
 
-    describe "onSocketMessage", ->
+    describe ".onSocketMessage", ->
 
       it "should create a new UDP client for a message from a new source", (done)->
         client = null
@@ -65,20 +65,19 @@ describe "hub.net.UdpServer and hub.net.UdpClient", ->
           return done(err) if err
           c.send(buffer, 0, buffer.length)
 
-    describe "close", ->
+    describe ".dispose", ->
+
       it "should close the socket", (done)->
         server.socket.on("close", done)
-        server.socket.on("error", done)
-
-        server.close()
+        server.dispose()
 
   describe "the client", ->
 
-    describe "close", ->
+    describe "dispose", ->
 
       it "should close the socket if it isn't a server client", (done)->
         connections.createClient SERVER_ADDRESS, (err, c)->
           return done(err) if err
 
           c.socket.on("close", done)
-          c.close()
+          c.dispose()
