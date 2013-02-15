@@ -69,14 +69,14 @@ class Server extends Connection
   listen: ->
     throw new Error("Abstract method `Server::listen` called")
 
-  addChild: (child)->
-    # Register a client and emit `client` event.
-    if child instanceof Client
-      # register client connection
-      @connections.registerConnection(child)
-      @clients.push(child)
-      @clientByAddress[child.address] = child
-    super(child)
+  # This must be called by a server client after initialisation
+  # is complete
+  _clientInitialized: (client)->
+    # register client connection
+    @connections.registerConnection(client)
+    @clients.push(client)
+    @clientByAddress[client.address] = client
+    @emit("client", client)
 
   removeChild: (child)->
     # Unregister client.

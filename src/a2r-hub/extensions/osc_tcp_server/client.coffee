@@ -7,12 +7,16 @@ class OscTcpClient extends hub.net.TcpClient
     super(options)
 
   initSocket: ->
-    super
     @_createInStream()
     @_createOutStream()
+    super
 
   # Send an OSC message to the client.
-  sendOSC: (message)->
+  sendOSC: (address, typeTag, args)->
+    if address instanceof osc.Message or address instanceof osc.Bundle
+      message = address
+    else
+      message = new osc.Message(address, typeTag, args)
     @oscPackStream.send(message)
 
   # Create stream for incoming data.

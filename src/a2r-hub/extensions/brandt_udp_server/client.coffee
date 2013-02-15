@@ -43,7 +43,7 @@ class BrandtUdpClient extends hub.net.UdpClient
   remove: (sym)->
     regex = new RegExp("^#{sym}_\\S+$")
     for symbol, node of @nodeBySym when regex.test(symbol)
-      @logger.info("BrandtUdpClient `#{@id}` node `#{node.address}` removed")
+      @logger.info("BrandtUdpClient `#{@address}` node `#{node.address}` removed")
       node.dispose()
 
   inport: (inport)-> @setOutport(inport)

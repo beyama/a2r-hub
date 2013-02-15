@@ -24,12 +24,12 @@ class UdpServer extends Server
   listen: -> @socket.bind(@port, @ip)
 
   addChild: (child)->
-    if child instanceof UdpServer
+    if child instanceof UdpClient
       @clientsByIPAndPort["#{child.ip}:#{child.port}"] = child
     super
 
   removeChild: (child)->
-    if child instanceof UdpServer
+    if child instanceof UdpClient
       delete @clientsByIPAndPort["#{child.ip}:#{child.port}"]
     super
 

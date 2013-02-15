@@ -17,7 +17,7 @@ class Client extends Connection
 
   # Initialize this client as a client belonging
   # to a server.
-  initAsServerClient: -> @server.emit("client", @)
+  initAsServerClient: -> @server._clientInitialized(@)
 
   # Initialize as client connection
   initAsClient: ->
