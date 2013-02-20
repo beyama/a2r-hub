@@ -2,7 +2,8 @@ should = require "should"
 _      = require "underscore"
 EventEmitter = require("events").EventEmitter
 
-hub    = require "../../"
+hub = require "../../"
+osc = hub.Hub.osc
 
 class MockClient extends hub.net.Client
   constructor: (options={})->
@@ -50,3 +51,62 @@ describe "hub.net.Client", ->
       client._initAsServerClient.should.be.true
       client.server.should.be.equal server
       should.not.exist client._initAsClient
+
+  describe ".sendOSC", ->
+
+    it "should pass OSC buffer to send if called with OSC message", ->
+      c = undefined
+
+      client = new MockClient(context: context)
+      client.send = (buffer, offset, length, callback)->
+        msg = osc.fromBuffer(buffer)
+        msg.address.should.be.equal "/a2r"
+        offset.should.be.equal 0
+        length.should.be.equal buffer.length
+        should.ok callback is c
+
+      msg = new osc.Message("/a2r", 1)
+      # without callback
+      client.sendOSC(msg)
+
+      # with callback
+      c = ->
+      client.sendOSC(msg, c)
+
+    it "should pass OSC buffer to send if called with OSC bundle", ->
+      c = undefined
+
+      client = new MockClient(context: context)
+      client.send = (buffer, offset, length, callback)->
+        bundle = osc.fromBuffer(buffer)
+        bundle.elements.should.have.length 1
+        offset.should.be.equal 0
+        length.should.be.equal buffer.length
+        should.ok callback is c
+
+      bundle = new osc.Bundle().add("/a2r", 1)
+      # without callback
+      client.sendOSC(bundle)
+
+      # with callback
+      c = ->
+      client.sendOSC(bundle, c)
+
+    it "should create an OSC message if called with an address and OSC arguments", ->
+      c = undefined
+
+      client = new MockClient(context: context)
+      client.send = (buffer, offset, length, callback)->
+        msg = osc.fromBuffer(buffer)
+        msg.address.should.be.equal "/a2r"
+        msg.arguments[0].should.be.equal 1
+        offset.should.be.equal 0
+        length.should.be.equal buffer.length
+        should.ok callback is c
+
+      # without callback
+      client.sendOSC("/a2r", 1)
+
+      # with callback
+      c = ->
+      client.sendOSC("/a2r", 1, c)

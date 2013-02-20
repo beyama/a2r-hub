@@ -2,8 +2,10 @@ osc = require "a2r-osc"
 hub = require "../../"
 
 class OscUdpClient extends hub.net.UdpClient
-  constructor: (server, ip, port, session)->
-    super(server, ip, port, session)
+  @defaultOptions = { type: "udp", protocol: "udp+osc:" }
+
+  constructor: (options)->
+    super(options)
     @on("message", @onMessage.bind(@))
 
   onMessage: (data)->

@@ -72,6 +72,8 @@ class Connection extends BaseObject
       hostname: @ip
       port:     @port
 
+    @on("error", @onError.bind(@))
+    
     super(parent)
 
   onSessionDispose: => @dispose()
@@ -86,5 +88,9 @@ class Connection extends BaseObject
       @session.removeListener("dispose", @onSessionDispose)
 
     super
+
+  onError: (error)->
+    @logger.error(error)
+    @logger.debug(error.stack)
 
 module.exports = Connection

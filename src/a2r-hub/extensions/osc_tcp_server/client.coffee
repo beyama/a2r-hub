@@ -3,6 +3,8 @@ slip = require "node-a2r-slip"
 hub  = require "../../"
 
 class OscTcpClient extends hub.net.TcpClient
+  @defaultOptions = { type: "tcp", protocol: "tcp+osc:" }
+
   constructor: (options)->
     super(options)
 

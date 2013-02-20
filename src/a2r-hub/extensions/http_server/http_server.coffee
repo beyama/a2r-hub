@@ -18,6 +18,7 @@ class HttpServer extends hub.net.HttpServer
     @socket.on("request", @express)
     @wss = new WebSocketServer(server: @socket)
     @wss.on("connection", @onWebSocketConnection.bind(@))
+    @wss.on("error", @onError.bind(@))
 
   dispose: ->
     return if @disposed
@@ -26,49 +27,30 @@ class HttpServer extends hub.net.HttpServer
 
   onWebSocketConnection: (socket)->
     _socket = socket._socket
+
     @logger.info("WebSocket client connected from '#{_socket.remoteAddress}:#{_socket.remotePort}'")
-    @authorizeWebSocket socket, (message, accept)=>
-      if accept
-        session = @hub.createSession()
-        client = new WebSocketClient(@, socket, session)
-        try
-          @registerClient(client)
-          @logger.info("WebSocket client connection established #{client.id}")
-        catch e
-          @logger.error("HttpServer: Error registering client")
-          @logger.error(e.stack)
-          session.dispose()
-      else
-        socket.close(403, message)
 
-  authorizeWebSocket: (socket, accept)->
-    cookie = socket.upgradeReq.headers.cookie
+    session = @hub.createSession()
 
-    # check if there's a cookie header
-    if cookie
-        # if there is, parse the cookie
-        cookie = cookieParser.parse(cookie)
-        # note that you will need to use the same key to grad the
-        # session id, as you specified in the Express setup.
-        sessionID = cookie['express.sid']
-        # unsign session id
-        if sessionID.indexOf("s:") is 0
-          # TODO: get secret from express
-          sessionID = cookieSignature.unsign(sessionID[2..-1], "secret")
+    # create new websocket client
+    options =
+      ip: _socket.remoteAddress
+      port: _socket.remotePort
+      server: @
+      socket: socket
+      context: @context
+      session: session
 
-        # (literally) get the session data from the session store
-        sessionStore = @express.set("session store")
-        sessionStore.get sessionID, (err, session)->
-          if err or not session
-            # if we cannot grab a session, turn down the connection
-            accept('Error', false)
-          else
-            # save the session data and accept the connection
-            socket.session = session
-            accept(null, true)
-    else
-       # if there isn't, turn down the connection with a message
-       # and leave the function.
-       accept('No cookie transmitted.', false)
+    try
+      client = new WebSocketClient(options)
+      @logger.info("New WebSocket connection from `#{client.address}`")
+    catch e
+      @logger.error("HttpServer: Couldn't create WebSocket client connection for `#{_socket.remoteAddress}:#{_socket.remotePort}`")
+      @logger.debug(e.stack)
+      client.dispose() if client
+      session.dispose()
+      return
+    
+    client
 
 module.exports = HttpServer

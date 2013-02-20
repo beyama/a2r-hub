@@ -15,8 +15,10 @@ module.exports = (argv)->
   else
     # create logger
     logger = new winston.Logger(
-      transports: [new winston.transports.Console()]
+      transports: [new winston.transports.Console(handleExceptions: true)]
     )
+
+  logger.exitOnError = false
 
   # create context
   context = new Summer
@@ -35,6 +37,9 @@ module.exports = (argv)->
 
   # register pid file writer
   context.register("pidFileWriter", class: hub.PidFileWriter, init: "init", dispose: "dispose")
+
+  # register extension loader
+  context.register("extensionLoader", class: hub.ExtensionLoader, init: "init", dispose: "dispose")
 
   # register server
   context.register("server", class: hub.Server, init: "start", dispose: "stop")

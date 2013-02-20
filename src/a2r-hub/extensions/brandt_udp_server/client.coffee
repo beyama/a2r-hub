@@ -27,7 +27,7 @@ class BrandtUdpClient extends hub.net.UdpClient
 
     try
       @nodeBySym[sym] = node = @session.createNode(address)
-      @logger.info("BrandtUdpClient `#{@id}` node `#{address}` added")
+      @logger.info("BrandtUdpClient `#{@address}` node `#{address}` added")
     catch e
       return false
 
@@ -35,10 +35,11 @@ class BrandtUdpClient extends hub.net.UdpClient
 
     # register message handler
     node.on "message", (message)=>
+      @logger.info("send to fudi #{sym} #{typeTag} #{message.arguments}")
       @sendFUDI(sym, typeTag, message.arguments)
 
     # register node dispose handler
-    node.on "dispose", -> delete @nodeBySym[sym]
+    node.on "dispose", => delete @nodeBySym[sym]
 
   remove: (sym)->
     regex = new RegExp("^#{sym}_\\S+$")
@@ -53,6 +54,7 @@ class BrandtUdpClient extends hub.net.UdpClient
   # handle message from PD
   onMessage: (data)->
     messages = parseFUDI(data)
+    @logger.info(data)
     
     for message in messages
       switch message[0]

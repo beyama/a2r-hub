@@ -50,13 +50,18 @@ class ExtensionLoader
                   instance.start (e)=>
                     if e
                       @hub.emit("extension:error", id, instance, e)
-                      return callback(e)
+                      @logger.error "ExtensionLoader: couldn't start extension `#{id}` - #{e.message}"
+                      @logger.error e.stack
+                      return callback()
                     @hub.emit("extension:started", id, instance)
                     @hub.emit("extension", instance)
                     callback()
                 catch e
                   @hub.emit("extension:error", id, instance, e)
-                  callback(e)
+                  @logger.error "ExtensionLoader: couldn't start extension `#{id}` - #{e.message}"
+                  @logger.error e.stack
+                  callback()
+
           async.series series, (err)=>
             return callback(err) if err
 

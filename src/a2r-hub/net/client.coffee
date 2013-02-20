@@ -26,13 +26,17 @@ class Client extends Connection
   send: (buffer, offset, length, callback)->
     throw new Error("Abstract method Client::send called")
 
-  sendOSC: (address, typeTag, args)->
+  sendOSC: (address, typeTag, args, callback)->
     if address instanceof osc.Message or address instanceof osc.Bundle
       message = address
+      callback = typeTag
     else
+      if typeof args is "function"
+        callback = args
+        args = undefined
       message = new osc.Message(address, typeTag, args)
     buffer = message.toBuffer()
-    @send(buffer, 0, buffer.length)
+    @send(buffer, 0, buffer.length, callback)
 
   open: (callback)->
     throw new Error("Abstract method Client::open called")

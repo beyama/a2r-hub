@@ -1,47 +1,51 @@
 hub = require "../../"
 osc = require "a2r-osc"
 
-SEND_OPTIONS = binary: true, mask: false
+SEND_BINARY_OPTIONS = binary: true, mask: false
+SEND_TEXT_OPTION = binary: true, mask: false
 
 class WebSocketClient extends hub.net.Client
-  constructor: (server, socket, session)->
-    # the WebSocket
-    @socket = socket
-    # the underlying socket
-    _socket = @socket._socket
-    super(server, _socket.remoteAddress, _socket.remotePort, session)
+  @defaultOptions = { type: "tcp", protocol: "ws:" }
 
+  constructor: (options)->
+    super(options)
+
+  initAsServerClient: ->
+    @socket = @options.socket
     @socket.on("error", @onSocketError.bind(@))
     @socket.on("close", @onSocketClose.bind(@))
     @socket.on("message", @onSocketMessage.bind(@))
 
     setTimeout =>
-      msg = new osc.Message("/foo/rocks", osc.Impulse)
-      @sendData(msg.toBuffer())
+      @sendOSC("/hello", osc.Impulse)
 
-  initAsServerClient: ->
+    super()
 
   initAsClient: ->
 
-  sendData: (data)->
-    console.log "sendData", data
-    @socket.send(data, SEND_OPTIONS)
+  send: (buffer, offset, length, callback)->
+    if typeof buffer is "string"
+      @socket.send(buffer, SEND_TEXT_OPTION, callback)
+    else
+      if offset isnt 0 or length isnt buffer.length
+        buf = new Buffer(length)
+        buffer.copy(buf, 0, offset, (offset + length))
+        @socket.send(buf, SEND_BINARY_OPTIONS, callback)
+      else
+        @socket.send(buffer, SEND_BINARY_OPTIONS, callback)
 
-  onMessage: (message)=>
-    @hub.send(message)
-
-  onSocketError: (error)->
-    @logger.error("WebSocketClient error #{@id}")
-    @logger.error(error.stack)
-    @emit("error", error)
+  onSocketError: (error)-> @emit("error", error)
 
   onSocketClose: -> @dispose()
 
-  onSocketMessage: (message)->
+  onSocketMessage: (message, flags)->
     try
-      @logger.info("Got message from `#{@id}` - #{message}")
-      message = osc.fromBuffer(message)
-      @hub.send(message)
+      if flags.binary
+        message = osc.fromBuffer(message)
+        @logger.info("Got OSC message #{message.address} #{message.arguments}")
+        @hub.send(message)
+      else
+        @logger.info("Got text message from `#{@address}` - #{message}")
     catch e
       @emit("error", e)
 

@@ -1,6 +1,6 @@
-Hub = require "./hub"
-ExtensionLoader = require "./extension_loader"
 Summer = require "summer"
+
+Hub = require "./hub"
 
 class Server
   Summer.autowire @, config: "config", pidFileWriter: "pidFileWriter"
@@ -13,11 +13,8 @@ class Server
 
   # start server
   start: (callback)->
-    # register extension loader
-    @context.register("ExtensionLoader", class: ExtensionLoader, init: "init", dispose: "dispose")
-
     # resolve extension loader
-    @context.resolve("ExtensionLoader", callback)
+    @context.resolve("extensionLoader", callback)
 
   # stop server
   stop: -> @hub.emit("stop")
