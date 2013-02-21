@@ -2,6 +2,7 @@ Summer  = require "summer"
 winston = require "winston"
 hub     = require "./"
 path    = require "path"
+connect = require "connect"
 
 module.exports = (argv)->
   argv ||= {}
@@ -50,6 +51,8 @@ module.exports = (argv)->
   # register connection service
   context.register("connectionService", class: hub.net.ConnectionService, dispose: "dispose")
 
-  context.register("express", hub.express)
+  publicDir = path.join(__dirname, "../../public")
+  webApp = connect().use(connect.static(publicDir))
+  context.set("connect", webApp)
 
   context

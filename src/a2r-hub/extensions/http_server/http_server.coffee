@@ -1,6 +1,4 @@
 hub = require "../../"
-cookieParser = require "cookie"
-cookieSignature = require "cookie-signature"
 
 WebSocketServer = require("ws").Server
 WebSocketClient = require("./web_socket_client")
@@ -13,9 +11,9 @@ class HttpServer extends hub.net.HttpServer
 
   initSocket: ->
     super
-    @express = @context.get("express")
-    # set express request callback
-    @socket.on("request", @express)
+    @connect = @context.get("connect")
+    # set connect request callback
+    @socket.on("request", @connect)
     @wss = new WebSocketServer(server: @socket)
     @wss.on("connection", @onWebSocketConnection.bind(@))
     @wss.on("error", @onError.bind(@))

@@ -11,11 +11,8 @@
     "summer": "*",
     "async": "*",
     "underscore.string": "*",
-    "express": "3.0.6",
-    "jade": "*",
-    "less-middleware": "*",
-    "cookie": "*",
-    "cookie-signature": "*"
+    "connect": "2.7.x",
+    "ws": "0.4.x"
   },
   "devDependencies": {
     "mocha": "*",
