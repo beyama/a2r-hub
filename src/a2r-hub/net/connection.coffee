@@ -22,6 +22,8 @@ BaseObject = require "../base_object"
 # * ipVersion: The IP version (4 or 6)
 # * type: Connection type (udp or tcp)
 # * protocol: Protocol
+# * hostname: Host name
+# * localAddress: Local interface to bind to for network connections.
 # * session: The session belonging to this connection
 # * context: The application context
 # * hub: The application hub
@@ -35,17 +37,18 @@ class Connection extends BaseObject
   constructor: (parent, options)->
     assert.ok(typeof options is 'object', "Options must be given")
 
-    options = _.extend({}, options, @constructor.defaultOptions)
+    options = _.extend({}, @constructor.defaultOptions, options)
 
-    @ip        = options.ip
-    @port      = Number(options.port)
-    @ipVersion = isIP(@ip)
-    @type      = options.type
-    @protocol  = options.protocol
-    @context   = options.context
-    @session   = options.session if options.session
-    @hostname  = options.hostname if options.hostname
-    @options   = options
+    @ip           = options.ip
+    @port         = Number(options.port)
+    @ipVersion    = isIP(@ip)
+    @type         = options.type
+    @protocol     = options.protocol
+    @context      = options.context
+    @session      = options.session if options.session
+    @hostname     = options.hostname if options.hostname
+    @localAddress = options.localAddress if options.localAddress
+    @options      = options
 
     assert.ok(@ipVersion, "Option `ip` must be a valid IP-address")
     assert.ok(@port and @port isnt NaN, "Option `port` must be a number")

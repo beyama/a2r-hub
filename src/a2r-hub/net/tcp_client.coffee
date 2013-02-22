@@ -11,15 +11,17 @@ class TcpClient extends Client
     @on("dispose", => @_closeSocket())
 
   # connect socket events with client handlers
-  initSocket: ->
+  _initSocket: ->
     @socket.on("error", @onSocketError.bind(@))
     @socket.on("close", @onSocketClose.bind(@))
+
+  _createClientSocket: -> net.createConnection(@)
 
   # initialize this client as server client
   initAsServerClient: ->
     @socket = @options.socket
     assert.ok(@socket, "Option `socket` must be given")
-    @initSocket()
+    @_initSocket()
     @connected = true
     super
 
@@ -36,18 +38,14 @@ class TcpClient extends Client
       @socket.removeListener("connect", fn)
       @socket.removeListener("error", fn)
 
-      unless error
+      unless error and @connected
         @connected = true
-        @initSocket()
+        @_initSocket()
         @emit("connect")
 
       callback(error)
 
-    @socket = net.createConnection
-      port: @port
-      host: @ip
-      localAddress: @options.localAddress
-
+    @socket ||= @_createClientSocket()
     @socket.on("connect", fn)
     @socket.on("error", fn)
 

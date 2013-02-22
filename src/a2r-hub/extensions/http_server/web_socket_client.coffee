@@ -1,27 +1,51 @@
 hub = require "../../"
 osc = require "a2r-osc"
 
-SEND_BINARY_OPTIONS = binary: true, mask: false
-SEND_TEXT_OPTION = binary: true, mask: false
+WebSocket = require "ws"
 
-class WebSocketClient extends hub.net.Client
+SEND_BINARY_OPTIONS = binary: true, mask: false
+SEND_TEXT_OPTION = binary: false, mask: false
+
+class WebSocketClient extends hub.net.TcpClient
   @defaultOptions = { type: "tcp", protocol: "ws:" }
 
   constructor: (options)->
     super(options)
+    rpc = @context.get("jsonRPC")
+    @rpcClient = rpc.createClient(@)
+    @rpcClient.on("error", (e)=> @emit("error", e))
 
-  initAsServerClient: ->
-    @socket = @options.socket
-    @socket.on("error", @onSocketError.bind(@))
-    @socket.on("close", @onSocketClose.bind(@))
+  _initSocket: ->
+    super
     @socket.on("message", @onSocketMessage.bind(@))
 
-    setTimeout =>
-      @sendOSC("/hello", osc.Impulse)
+  # close the socket
+  _closeSocket: -> @socket.close()
 
-    super()
+  # open the connection
+  open: (callback)->
+    return callback() if @connected
 
-  initAsClient: ->
+    fn = (error)=>
+      @socket.removeListener("open", fn)
+      @socket.removeListener("error", fn)
+
+      unless error and @connected
+        @connected = true
+        @_initSocket()
+        @emit("connect")
+
+      callback(error)
+
+    @socket ||= new WebSocket(@address)
+    @socket.on("open", fn)
+    @socket.on("error", fn)
+
+  # call a remote method via JSON-RPC
+  jsonRPC: -> @rpcClient.call.apply(@rpcClient, arguments)
+
+  # send an object as JSON
+  sendJSON: (json)-> @send(JSON.stringify(json))
 
   send: (buffer, offset, length, callback)->
     if typeof buffer is "string"
@@ -34,18 +58,13 @@ class WebSocketClient extends hub.net.Client
       else
         @socket.send(buffer, SEND_BINARY_OPTIONS, callback)
 
-  onSocketError: (error)-> @emit("error", error)
-
-  onSocketClose: -> @dispose()
-
   onSocketMessage: (message, flags)->
     try
       if flags.binary
         message = osc.fromBuffer(message)
-        @logger.info("Got OSC message #{message.address} #{message.arguments}")
         @hub.send(message)
       else
-        @logger.info("Got text message from `#{@address}` - #{message}")
+        process.nextTick => @rpcClient.handle(message)
     catch e
       @emit("error", e)
 

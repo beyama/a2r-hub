@@ -27,7 +27,8 @@ module.exports = (argv)->
   context.set("argv", argv)
 
   # create the hub
-  _hub  = new hub.Hub
+  _hub = new hub.Hub
+  _hub.context = context
   # and register hub in context
   context.set("hub", _hub)
 
@@ -44,6 +45,9 @@ module.exports = (argv)->
 
   # register server
   context.register("server", class: hub.Server, init: "start", dispose: "stop")
+
+  # register JSON RPC
+  context.register("jsonRPC", class: hub.JSONRPC, dispose: "dispose")
 
   # set context locals
   context.set("logger", logger)
