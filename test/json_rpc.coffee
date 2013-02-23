@@ -7,24 +7,43 @@ EventEmitter = require("events").EventEmitter
 
 JSONRPC = a2rHub.JSONRPC
 
-class MockConnection extends EventEmitter
-  constructor: (rpc)->
+class MockClient extends EventEmitter
+  constructor: (rpc, server)->
     @client = new JSONRPC.RPCClient(rpc, @)
-    @client.on("error", (e)=> @emit("error", e))
+    @client.on("error",  (e)=> @emit("error", e))
     @client.on("result", (e)=> @emit("result", e))
+    @server = server
+    # connect server data-event with onMessage handler
+    @server.on("data", @onMessage)
 
+  # pass message to client.handle
+  onMessage: (message)=> @client.handle(message)
+
+  # delegate to client.call
   jsonRPC: -> @client.call.apply(@client, arguments)
 
+  # emit message on server
   sendJSON: (json)->
-    process.nextTick =>
-      @client.handle(JSON.stringify(json))
+    process.nextTick => @server.emit("message", json)
+
+class MockServer extends EventEmitter
+  constructor: (rpc)->
+    @client = new JSONRPC.RPCClient(rpc, @)
+    @client.on("error",  (e)=> @emit("error", e))
+    @client.on("result", (e)=> @emit("result", e))
+    @on("message", @onMessage)
+
+  onMessage: (message)=> @client.handle(message)
+
+  sendJSON: (json)-> @emit("data", json)
 
 describe "JSONRPC", ->
-  client = rpc = null
+  client = server = rpc = null
 
   beforeEach ->
     rpc = new JSONRPC
-    client = new MockConnection(rpc)
+    server = new MockServer(rpc)
+    client = new MockClient(rpc, server)
 
   describe ".expose", ->
 
@@ -82,9 +101,9 @@ describe "JSONRPC", ->
           error.error.message.should.be.equal "Parse error"
           done()
 
-        client.client.handle("{ boom }")
+        client.sendJSON(foo: "bar")
 
-      it "should emit result on client if no callback is given", (done)->
+      it "should emit result on client if no callback but a timeout is given", (done)->
         client.on "error", done
 
         rpc.expose "version", (fn)->
@@ -95,7 +114,7 @@ describe "JSONRPC", ->
           res.result.should.be.equal "0.0.1"
           done()
 
-        client.jsonRPC "version"
+        client.jsonRPC "version", null, 5
 
       it "should call a RPC method and send the result back to the client", (done)->
         client.on "error", done

@@ -48,15 +48,47 @@ class RPCClient extends BaseObject
 
     super(rpc)
 
+  # Parse JSON data and check format
   parse: (json)->
-    try
-      JSON.parse(json)
-    catch e
-      throw new ParseError
+    if typeof json is "string"
+      try
+        json = JSON.parse(json)
+      catch e
+        throw new ParseError("Invalid JSON data")
+
+    # jsonrpc version must be given and must be "2.0"
+    if json.jsonrpc isnt "2.0"
+      throw new ParseError("Field 'jsonrpc' must be '2.0'")
+
+    result = json.result?
+    error  = json.error?
+
+    # either result or error but not both
+    if result and error
+      throw new ParseError("Either 'result' or 'error' must be given (but not both)")
+
+    # result object
+    if result or error
+      # id must be given at least with a value of null
+      if json.id is undefined
+        throw new ParseError("Result must contain an ID")
+      # error code must be given if error is present
+      if error and not json.error.code?
+        throw new ParseError("Error must contain an error code")
+    # request object
+    else if json.method
+      # method must be a string
+      if typeof json.method isnt "string"
+        throw new ParseError("Method must be a string")
+    # neither result nor request
+    else
+      throw new ParseError("JSON object is neither a request nor a result")
+
+    json
 
   handleResponse: (message)->
     try
-      if (id = message.id) && (handler = @requests[id])
+      if (id = message.id)? && (handler = @requests[id])
         delete @requests[id]
 
         if message.error
@@ -71,6 +103,9 @@ class RPCClient extends BaseObject
     catch e
       @emit("error", e)
 
+  # Handle an error.
+  #
+  # Build an error response object and send it back.
   handleError: (response, error)->
     response ||= jsonrpc: "2.0", id: null
 
@@ -80,23 +115,31 @@ class RPCClient extends BaseObject
     else if error instanceof Error
       response.error = { code: -32603, message: error.message }
     else
-      response.error = { code: -32603, message: error }
+      response.error = { code: -32603, message: String(error) }
 
     @connection.sendJSON(response)
 
+  # Handle a message.
   handle: (json)->
     response = null
+
+    # if true no response is send back
+    isNotification = false
 
     try
       # parse JSON; this will throw a ParseError if something goes wrong
       message = @parse(json)
 
       # if response message
-      if message.result || message.error
+      if message.result? || message.error?
         return @handleResponse(message)
       # else request message
       else
-        response = jsonrpc: "2.0", id: message.id
+        # no response if id is undefined or null
+        isNotification = not message.id?
+
+        unless isNotification
+          response = jsonrpc: "2.0", id: message.id
 
         # get method; this will throw a MethodNotFoundError if method isn't found
         method = @parent.getMethod(message.method)
@@ -110,11 +153,12 @@ class RPCClient extends BaseObject
 
           called = true
 
-          if error
-            @handleError(response, error)
-          else
-            response.result = result
-            @connection.sendJSON(response)
+          unless isNotification
+            if error
+              @handleError(response, error)
+            else
+              response.result = result
+              @connection.sendJSON(response)
 
         params = message.params
 
@@ -129,19 +173,63 @@ class RPCClient extends BaseObject
             method.call(@, callback)
     # catch ParseError, MethodNotFoundError or errors thrown by handleResponse
     catch e
+      # ignore the error if this message is a notification
+      return if isNotification
+      # else
       return @handleError(response, e)
 
-  # call a remote method
+  # Call a remote method.
+  #
+  # e.g:
+  # call(method, parmas, [timeout], [callback])
+  #
+  # Arguments:
+  # * method: The remote method name.
+  # * params: A value, an object of values or an array of values.
+  # * timeout: Timeout in ms.
+  # * callback: A callback function with signature 'void fn(error, result)'.
+  #
+  # if only method and params is given
+  # then this will send a notification without waiting
+  # for an response.
+  #
+  # If called with timeout but without callback then
+  # the result or error will be emitted on this.
+  #
+  # if callback given then the callback will be called with
+  # an error as first argument or the result as second argument.
   call: (method, params, timeout, callback)->
-    # generate a new request id
-    id = @requestId++
+    id = null
 
+    # set params to null if undefined
+    if params is undefined
+      params = null
+    # wrap params in an array if params isn't a type of object
+    else if params isnt null and typeof params isnt "object"
+      params = [params]
+
+    # not timeout given but a callback
     if typeof timeout is "function"
       callback = timeout
       timeout  = null
 
-    # register timeout handler
-    if timeout
+    # set default timeout of 10sek
+    if callback and not timeout
+      timeout = 10000
+
+    # create a default callback that emits results or errors on this
+    if timeout and not callback
+      callback = (error, result)=>
+        if error
+          @emit("error", error)
+        else
+          @emit("result", result)
+
+    if callback
+      # generate a new request id
+      id = @requestId++
+
+      # register timeout handler
       timeout = Number(timeout)
 
       if timeout is NaN or timeout < 1
@@ -153,20 +241,13 @@ class RPCClient extends BaseObject
 
           handler(new TimeoutError(timeout))
       , timeout
-          
 
-    # create a default callback that emits results or errors on this
-    callback ||= (error, result)=>
-      if error
-        @emit("error", error)
-      else
-        @emit("result", result)
-
-    # register callback for this request
-    @requests[id] = callback
+      # register callback for this request
+      @requests[id] = callback
 
     # send request message
-    request = { jsonrpc: "2.0", id: id, method: method, params: params }
+    request = { jsonrpc: "2.0", method: method, params: params }
+    request.id = id if id isnt null
     @connection.sendJSON(request)
 
 # JSON RPC handler class
@@ -191,8 +272,8 @@ class JSONRPC extends BaseObject
   #
   # if the first argument is a string
   # and the second is an object then each
-  # method of the object will be registered
-  # prefixed with string plus a dot.
+  # method of the object will be exposed
+  # prefixed with the string plus a dot.
   #
   # e.g.:
   # rpc.expose "name", (arg)-> ...

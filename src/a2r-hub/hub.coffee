@@ -34,8 +34,7 @@ class Hub extends Tree
   dispose: ->
     # dispose each registered session, session.dispose manipulates the underlying
     # @sessions array so we iterate over a copy of @sessions.
-    if @sessions
-      session.dispose() for session in @sessions[..]
+    session.dispose() for session in @sessions[..]
     super()
 
   # Get session by id
