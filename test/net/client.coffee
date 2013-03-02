@@ -2,10 +2,10 @@ should = require "should"
 _      = require "underscore"
 EventEmitter = require("events").EventEmitter
 
-hub = require "../../"
-osc = hub.Hub.osc
+a2rHub = require "../../"
+osc = a2rHub.Hub.osc
 
-class MockClient extends hub.net.Client
+class MockClient extends a2rHub.net.Client
   constructor: (options={})->
     options = _.extend(options, { ip: "127.0.0.1", port: 8000, type: "udp", protocol: "udp"})
     super(options)
@@ -18,7 +18,7 @@ class MockClient extends hub.net.Client
     @_initAsClient = true
     super
 
-class MockServer extends hub.net.Server
+class MockServer extends a2rHub.net.Server
   constructor: (options)->
     options = _.extend(options, { ip: "127.0.0.1", port: 8000, type: "udp", protocol: "udp:"})
     super(options)
@@ -27,12 +27,12 @@ class MockServer extends hub.net.Server
 
   listen: -> @socket.emit("listening")
 
-describe "hub.net.Client", ->
+describe "a2rHub.net.Client", ->
 
   context = null
 
   beforeEach (done)->
-    context = hub.applicationContext()
+    context = a2rHub.applicationContext()
 
     context.resolve "connectionService", (err)-> done(err)
 
@@ -51,6 +51,22 @@ describe "hub.net.Client", ->
       client._initAsServerClient.should.be.true
       client.server.should.be.equal server
       should.not.exist client._initAsClient
+
+  describe ".sendToHub", ->
+    it "should set message.from to client.session and message.connection to client and pass the message to hub.send", (done)->
+      hub = context.get("hub")
+      session = hub.createSession()
+
+      server = new MockServer(context: context)
+      client = new MockClient(context: context, server: server, session: session)
+
+      node = hub.createNode("/test")
+      node.on "message", (message)->
+        message.from.should.be.equal session
+        message.connection.should.be.equal client
+        done()
+
+      client.sendToHub new osc.Message("/test", osc.Impulse)
 
   describe ".sendOSC", ->
 

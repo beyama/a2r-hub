@@ -50,7 +50,9 @@ class OscTcpClient extends hub.net.TcpClient
     # pipe packed data to SLIP endoder
     @oscPackStream.pipe(@slipEncoder)
 
-  onOscMessage: (message)-> @hub.send(message)
+  onOscMessage: (message)->
+    @emit("osc", message)
+    @sendToHub(message)
 
   dispose: ->
     return if @disposed

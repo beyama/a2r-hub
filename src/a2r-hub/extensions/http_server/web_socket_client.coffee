@@ -62,7 +62,8 @@ class WebSocketClient extends hub.net.TcpClient
     try
       if flags.binary
         message = osc.fromBuffer(message)
-        @hub.send(message)
+        @emit("osc", message)
+        @sendToHub(message)
       else
         process.nextTick => @rpcClient.handle(message)
     catch e

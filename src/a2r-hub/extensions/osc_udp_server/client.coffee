@@ -12,11 +12,10 @@ class OscUdpClient extends hub.net.UdpClient
     try
       # parse message
       message = osc.fromBuffer(data)
-      # set sender to session
-      message.from = @session
+      # emit `osc`
       @emit("osc", message)
       # send message
-      @hub.send(message)
+      @sendToHub(message)
     catch e
       @emit("error", e)
 

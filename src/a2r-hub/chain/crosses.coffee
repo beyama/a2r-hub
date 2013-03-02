@@ -20,7 +20,7 @@ Chain::crosses = (index, value, direction="any")->
 
   lastValue = null
 
-  # add step chain
+  # add step to chain
   @step switch direction
     when "any"
       (message, next)->

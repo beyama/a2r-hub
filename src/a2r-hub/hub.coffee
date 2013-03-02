@@ -19,6 +19,25 @@ class Node extends Tree.Node
       @::[k] = v
     @
 
+  # Set values to current values of this node.
+  #
+  # This will emit `changed` with signature (session, oldValues, newValues).
+  #
+  # Arguments:
+  # * session: The session of the actor who sets the values.
+  # * values: An OSC message or an array of values to set.
+  set: (session, values)->
+    old = @values || []
+
+    if values instanceof osc.Message
+      @values = values.arguments
+    else if Array.isArray(values)
+      @values = values
+    else
+      throw new TypeError("Invalid value type")
+
+    @emit("changed", session, old, @values)
+
 class Hub extends Tree
   @Node: Node
 

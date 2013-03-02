@@ -89,6 +89,22 @@ describe "Hub", ->
       hub.send(message).should.have.length 10
       count.should.be.equal 10
 
+  describe ".Node", ->
+    describe ".set", ->
+      it "should set values to node and emit changed", (done)->
+        session = hub.createSession()
+        node = hub.createNode("/test")
+
+        node.on "changed", (ses, oldValues, newValues)->
+          ses.should.be.equal session
+          oldValues.should.be.empty
+          newValues.should.have.length 1
+          newValues[0].should.be.equal 82
+          newValues.should.be.equal node.values
+          done()
+
+        node.set(session, [82])
+
   describe ".Session", ->
     session = null
   

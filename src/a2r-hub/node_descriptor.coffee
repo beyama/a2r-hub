@@ -33,7 +33,7 @@ class NodeDescriptor
         @_arguments[index]
 
     # else setter
-    assert(index > -1, "Argument index must be non negativ value")
+    assert(index > -1, "Argument index must be a non negativ value")
     assert(not @_arguments[index], "Argument is already defined")
 
     # clone desc

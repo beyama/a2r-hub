@@ -26,6 +26,14 @@ class Client extends Connection
   send: (buffer, offset, length, callback)->
     throw new Error("Abstract method Client::send called")
 
+  # Send a message to the hub.
+  #
+  # This will set message.from to @session and message.connection to this.
+  sendToHub: (message)->
+    message.from = @session
+    message.connection = @
+    @hub.send(message)
+
   sendOSC: (address, typeTag, args, callback)->
     if address instanceof osc.Message or address instanceof osc.Bundle
       message = address
