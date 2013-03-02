@@ -90,6 +90,14 @@ describe "Hub", ->
       count.should.be.equal 10
 
   describe ".Node", ->
+    describe "constructor", ->
+      it "should emit `created`", (done)->
+        hub.nodeObserver.on "/a2r/node", "created", (node)->
+          node.address.should.be.equal "/a2r/node"
+          done()
+
+        hub.createNode("/a2r/node")
+
     describe ".set", ->
       it "should set values to node and emit changed", (done)->
         session = hub.createSession()

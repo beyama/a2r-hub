@@ -1,10 +1,70 @@
-Tree       = require "./tree"
-BaseObject = require "./base_object"
-address    = require "./address"
+Tree         = require "./tree"
+BaseObject   = require "./base_object"
+address      = require "./address"
+EventEmitter = require("events").EventEmitter
 
 osc = require "a2r-osc"
 
+# This class allows us to register listeners for events on nodes which are not created yet.
+# It behaves like a node EventEmitter with the difference that all methods require an OSC address
+# as first argument.
+#
+# e.g.:
+# hub.nodeObserver.on "/a2r/node", "changed", (event)-> ...
+# hub.nodeObserver.removeListener "/a2r/node", "changed", listener
+class NodeObserver
+  constructor: ->
+    @addresses = {}
+
+  _checkArgs: (addr, event, listener)->
+    if not address.isValidAddress(addr) or typeof event isnt "string" or typeof listener isnt "function"
+      throw new TypeError("Method `on` must be called with an valid OSC address string, `event` string and `listener` function")
+
+  # Adds a listener to the end of the listeners array for the specified event on the specified node.
+  on: (address, event, listener)->
+    @_checkArgs(address, event, listener)
+    emitter = @addresses[address] ||= new EventEmitter
+    emitter.on(event, listener)
+
+  # Adds a one time listener for the event on the specified node.
+  once: (address, event, listener)->
+    @_checkArgs(address, event, listener)
+    emitter = @addresses[address] ||= new EventEmitter
+    emitter.once("event", listener)
+
+  # Remove a listener from the listener array for the specified event on the specified node.
+  removeListener: (address, event, listener)->
+    if (emitter = @addresses[address])
+      emitter.removeListener(event, listener)
+
+  # Removes all listeners from a sepecified node, or those of the specified event. 
+  removeAllListeners: (address, event)->
+    if (emitter = @addresses[address])
+      if event
+        emitter.removeAllListeners(event)
+      else
+        emitter.removeAllListeners()
+
+  # Returns an array of listeners for the specified event on the specified node. 
+  #
+  # Returns undefined if no event is registered for the specified node.
+  listeners: (address, event)->
+    if (emitter = @addresses[address])
+      emitter.listeners(event)
+
+  # Execute each of the listeners in order with the supplied arguments. 
+  emit: (address, args)->
+    if (emitter = @addresses[address])
+      emitter.emit.apply(emitter, args)
+
 class Node extends Tree.Node
+  constructor: ->
+    super
+
+    # We emit `created` at this point to call all node observer listeners which
+    # are registerd for this.address and the `created` event.
+    @emit("created", @)
+
   # extend the class with properties
   # of the object
   @extend: (object)->
@@ -38,16 +98,22 @@ class Node extends Tree.Node
 
     @emit("changed", session, old, @values)
 
+  emit: ->
+    @root.nodeObserver.emit(@address, arguments)
+    super
+
 class Hub extends Tree
   @Node: Node
+  @NodeObserver: NodeObserver
 
   # export osc
   @osc: osc
 
   constructor: ->
     super()
-    @sessionById = {}
-    @sessions    = []
+    @sessionById  = {}
+    @sessions     = []
+    @nodeObserver = new NodeObserver
 
   # Dispose the hub and close each session.
   dispose: ->
