@@ -102,6 +102,7 @@ class Node extends Tree.Node
     @root.nodeObserver.emit(@address, arguments)
     super
 
+# The OSC hub of the server.
 class Hub extends Tree
   @Node: Node
   @NodeObserver: NodeObserver
@@ -179,8 +180,18 @@ class Session extends BaseObject
     @nodes     = []
     super(hub)
 
+  # Dispose this session.
+  #
+  # This will emit `session:dispose` on the hub,
+  # dispose all registered connections and all
+  # nodes created by this session.
   dispose: (removeFromParent)->
     @hub.emit("session:dispose", @)
+
+    # dispose each registered connection, connection.dispose manipulates the underlying
+    # @connections array so we iterate over a copy of @connections.
+    if @connections
+      connection.dispose() for connection in @connections[..]
 
     # dispose each registered node, node.dispose manipulates the underlying
     # @nodes array so we iterate over a copy of @nodes.
@@ -188,6 +199,7 @@ class Session extends BaseObject
 
     super(removeFromParent)
 
+  # callback to remove a disposed node from the nodes list.
   onDisposeNode: (node)=>
     index = @nodes.indexOf(node)
     @nodes.splice(index, 1) if index > -1
@@ -206,6 +218,41 @@ class Session extends BaseObject
     @emit("node", node)
 
     node
+
+  # Add a connection to the session.
+  #
+  # Each registered connection will be disposed
+  # on session dispose.
+  addConnection: (connection)->
+    @connections ||= []
+    @connections.push(connection)
+
+  # Remove a connection from session.
+  removeConnection: (connection)->
+    return unless @connections
+
+    index = @connections.indexOf(connection)
+    return false if index is -1
+    @connections.splice(index, 1)
+    true
+
+  # send OSC message to the client
+  sendOSC: ->
+    return false unless @connections
+
+    for c in @connections when c.sendOSC
+      c.sendOSC.apply(c, arguments)
+      return true
+    false
+
+  # send a JSON-RPC 2 request or notification to the client
+  jsonRPC: ->
+    return false unless @connections
+
+    for c in @connections when c.jsonRPC
+      c.jsonRPC.apply(c, arguments)
+      return true
+    false
 
 Hub.Session = Session
 module.exports = Hub

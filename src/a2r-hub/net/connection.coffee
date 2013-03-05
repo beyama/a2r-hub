@@ -61,13 +61,7 @@ class Connection extends BaseObject
 
     if @session
       assert.ok(@session instanceof Hub.Session, "Session must be an instance of Hub.Session")
-
-      # register this connection on the session
-      @session.connections ||= []
-      @session.connections.push(@)
-
-      # close this connection on session 'close'
-      @session.on("dispose", @onSessionDispose)
+      @session.addConnection(@)
 
     @address = url.format
       protocol: @protocol
@@ -79,16 +73,12 @@ class Connection extends BaseObject
     
     super(parent)
 
-  onSessionDispose: => @dispose()
-
+  # Dispose the connection.
   dispose: ->
     return if @disposed
 
     if @session
-      # remove this connection from the session
-      index = @session.connections.indexOf(@)
-      @session.connections.splice(index, 1) if index > -1
-      @session.removeListener("dispose", @onSessionDispose)
+      @session.removeConnection(@)
 
     super
 

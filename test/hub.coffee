@@ -1,6 +1,7 @@
 should = require "should"
 osc    = require "a2r-osc"
-Hub    = require("../").Hub
+a2rHub = require "../"
+Hub    = a2rHub.Hub
 
 describe "Hub", ->
   hub = null
@@ -117,6 +118,32 @@ describe "Hub", ->
     session = null
   
     beforeEach -> session = hub.createSession()
+
+    describe ".jsonRPC", ->
+      it "should delegate to connection.jsonRPC", ->
+        class Client
+          jsonRPC: (args...)-> @args = args
+
+        client = new Client
+        session.addConnection(client)
+
+        session.jsonRPC 1, 2, 3
+
+        client.args.should.have.length 3
+        client.args[2].should.be.equal 3
+
+    describe ".sendOSC", ->
+      it "should delegate to connection.sendOSC", ->
+        class Client
+          sendOSC: (args...)-> @args = args
+
+        client = new Client
+        session.addConnection(client)
+
+        session.sendOSC 1, 2, 3
+
+        client.args.should.have.length 3
+        client.args[2].should.be.equal 3
   
     describe ".dispose", ->
   
@@ -132,6 +159,27 @@ describe "Hub", ->
         session.dispose()
         called.should.be.equal 2
   
+      it "should dispose each connection", ->
+        context = a2rHub.applicationContext()
+
+        options =
+          ip: "127.0.0.1"
+          port: 8000
+          protocol: "udp:"
+          type: "udp"
+          session: session
+          context: context
+
+        connection = new a2rHub.net.Connection(null, options)
+        session.connections.should.include(connection)
+
+        session.dispose()
+
+        session.connections.should.not.include(connection)
+        connection.disposed.should.be.true
+
+        context.shutdown()
+
       it "should dispose each node", ->
         node1 = session.createNode("/1")
         node2 = session.createNode("/2")
@@ -139,3 +187,4 @@ describe "Hub", ->
         session.dispose()
         node1.disposed.should.be.true
         node2.disposed.should.be.true
+

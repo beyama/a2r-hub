@@ -67,14 +67,6 @@ describe "hub.net.Connection", ->
         it "should register connection on session", ->
           session.connections.should.include connection
 
-        it "should register `onSessionDispose` event handler on session `dispose` event", (done)->
-          session.listeners("dispose").should.include connection.onSessionDispose
-
-          session.on "dispose", ->
-            connection.disposed.should.be.true
-            done()
-          session.dispose()
-
     describe "with invalid options", ->
       it "should throw an error", ->
         for option in ["ip", "port", "type", "protocol", "context"]
