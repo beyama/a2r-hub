@@ -3,7 +3,6 @@ RESERVED_CHARACTERS = "\\#\\*,\\?\\[\\]{}\\s"
 ALLOWED_TOKEN_CHARACTER_SET = "[^#{RESERVED_CHARACTERS}/]"
 RESERVED_TOKEN_CHARACTER_SET = "[#{RESERVED_CHARACTERS}/]"
 
-VALID_TOKEN_REGEXP = new RegExp(ALLOWED_TOKEN_CHARACTER_SET)
 INVALID_TOKEN_REGEXP = new RegExp(RESERVED_TOKEN_CHARACTER_SET)
 
 TOKEN_REPLACE_REGEXP = new RegExp("(\\?|\\*|\\[.*\\]|{.*})", "g")
@@ -50,7 +49,7 @@ module.exports = address =
   # Returns true if given token doesn't contain
   # slashes or reserved characters.
   isValidToken: (token)->
-    VALID_TOKEN_REGEXP.test(token)
+    not INVALID_TOKEN_REGEXP.test(token)
 
   # Returns true if given string starts with a slash
   # and doesn't contain pattern characters.

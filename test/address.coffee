@@ -68,3 +68,17 @@ describe ".compilePattern", ->
   it "should throw an error if pattern contains illegal characters", ->
     for addr in illegalAddresses
       (-> address.compilePattern(addr) ).should.throw()
+
+describe ".isValidToken", ->
+  invalidTokens = ["foo/bar", "b*r", "ba[a-z]", "ba{r,z}", "f{"]
+
+  it "should return false if token contains invalid characters", ->
+    for t in invalidTokens
+      address.isValidToken(t).should.be.false
+
+  validTokens = ["foo", "bar", "baz", "f12", "foo.bar"]
+
+  it "should return true if token is valid", ->
+    for t in validTokens
+      address.isValidToken(t).should.be.true
+
