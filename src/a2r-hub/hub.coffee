@@ -81,7 +81,7 @@ class Node extends Tree.Node
 
   # Set values to current values of this node.
   #
-  # This will emit `changed` with signature (session, oldValues, newValues).
+  # This will emit `changed` with signature (node, oldValues, newValues, session).
   #
   # Arguments:
   # * session: The session of the actor who sets the values.
@@ -96,7 +96,7 @@ class Node extends Tree.Node
     else
       throw new TypeError("Invalid value type")
 
-    @emit("changed", session, old, @values)
+    @emit("changed", @, old, @values, session)
 
   emit: ->
     @root.nodeObserver.emit(@address, arguments)

@@ -6,6 +6,8 @@ generateFUDI = hub.fudi.generateFUDI
 utils = require "./utils"
 
 class BrandtUdpClient extends hub.net.UdpClient
+  @defaultOptions = { type: "udp", protocol: "udp+brandt:" }
+
   constructor: (options)->
     super(options)
 
@@ -54,7 +56,6 @@ class BrandtUdpClient extends hub.net.UdpClient
   # handle message from PD
   onMessage: (data)->
     messages = parseFUDI(data)
-    @logger.info(data)
     
     for message in messages
       switch message[0]

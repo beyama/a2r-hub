@@ -104,12 +104,13 @@ describe "Hub", ->
         session = hub.createSession()
         node = hub.createNode("/test")
 
-        node.on "changed", (ses, oldValues, newValues)->
-          ses.should.be.equal session
+        node.on "changed", (n, oldValues, newValues, ses)->
+          n.should.be.equal node
           oldValues.should.be.empty
           newValues.should.have.length 1
           newValues[0].should.be.equal 82
           newValues.should.be.equal node.values
+          ses.should.be.equal session
           done()
 
         node.set(session, [82])
