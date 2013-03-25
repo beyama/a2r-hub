@@ -20,7 +20,13 @@ class WebSocketClient extends hub.net.TcpClient
     @socket.on("message", @onSocketMessage.bind(@))
 
   # close the socket
-  _closeSocket: -> @socket.close()
+  _closeSocket: -> @close()
+
+  close: (code, data)->
+    return if @disposed or not @connected
+
+    @socket.close(code, data)
+    @connected = false
 
   # open the connection
   open: (callback)->

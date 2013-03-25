@@ -4,18 +4,22 @@ Hub        = require "./hub"
 osc        = Hub.osc
 
 class Jam extends BaseObject
-  constructor: (session, name)->
+  constructor: (session, name, title, description)->
     if not address.isValidToken(name)
       throw new Error("Invalid Jam name `#{name}`")
 
     super(session)
 
-    @owner     = session
-    @createdAt = new Date
-    @hub       = @owner.hub
-    @name      = name
-    @context   = @hub.context
-    @logger    = @context.get("logger")
+    @owner       = session
+    @createdAt   = new Date
+    @hub         = @owner.hub
+    @name        = name
+    @title       = title
+    @description = description
+    @context     = @hub.context
+    @logger      = @context.get("logger")
+    @root        = @hub.createNode("/#{@name}")
+    @nodes       = {}
 
     @participants = []
 
@@ -23,8 +27,18 @@ class Jam extends BaseObject
     unless session instanceof Hub.Session
       throw new Error("session must be an instance of Hub.Session")
 
-    if @participants.indexOf(session) is -1
+    if (added = (@participants.indexOf(session) is -1))
       @participants.push(session)
+
+    bundle = new osc.Bundle
+
+    for a, n of @nodes when n.values?
+      bundle.add(a, n.values)
+
+    if bundle.elements.length
+      session.sendOSC(bundle)
+
+    added
 
   leave: (session)->
     unless session instanceof Hub.Session
@@ -35,11 +49,10 @@ class Jam extends BaseObject
 
   onNodeValuesChanged: (node, oldValues, newValues, session)=>
     # FIXME: The signature of this message will not use integer
-    # for numbers, even if the descriptor of this node says integer.
+    # for numbers, even if the descriptor of this node says integers.
     message = new osc.Message(node.address, newValues)
 
     for s in @participants when s isnt session
-      console.log "send changes to #{session.id}"
       s.sendOSC(message)
 
   createNode: (session, address, options)->
@@ -50,6 +63,20 @@ class Jam extends BaseObject
 
     address = "/#{@name}#{address}"
     @logger.info("Jam `#{@name}` create node `#{address}`")
-    session.createNode(address, options)
+
+    node = session.createNode(address, options)
+    node.on("changed", @onNodeValuesChanged)
+    node.on("dispose", @onNodeDispose)
+
+    @nodes[address] = node
+    node
+
+  onNodeDispose: (node)=> delete @nodes[node.address]
+
+  getNode: (address)-> @nodes["/#{@name}#{address}"]
+
+  dispose: ->
+    @root.dispose()
+    super
 
 module.exports = Jam

@@ -76,6 +76,7 @@ class Server extends Connection
     @connections.registerConnection(client)
     @clients.push(client)
     @clientByAddress[client.address] = client
+    @logger.info("#{client.constructor.name} connection from `#{client.address}`")
     @emit("client", client)
 
   removeChild: (child)->
@@ -85,6 +86,7 @@ class Server extends Connection
       delete @clientByAddress[child.address]
       index = @clients.indexOf(child)
       @clients.splice(index, 1) if index > -1
+      @logger.info("#{child.constructor.name} connection from `#{child.address}` closed")
     super(child)
 
   # Callback to call if the server/socket is listening.

@@ -10,6 +10,7 @@
     "optimist": "*",
     "summer": "*",
     "async": "*",
+    "underscore": "*",
     "underscore.string": "*",
     "connect": "2.7.x",
     "ws": "0.4.x"

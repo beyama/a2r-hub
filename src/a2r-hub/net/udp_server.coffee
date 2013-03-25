@@ -48,11 +48,9 @@ class UdpServer extends Server
 
     try
       client = new clientClass(options)
-      @logger.info("#{@constructor.name}: New connection from `#{client.address}`")
     catch e
       @logger.error("#{@constructor.name}: Couldn't create client connection for `#{rinfo.address}:#{rinfo.port}`")
       @logger.debug(e.stack)
-      client.dispose() if client
       session.dispose()
       return
 

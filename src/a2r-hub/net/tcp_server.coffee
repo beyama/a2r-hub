@@ -36,12 +36,11 @@ class TcpServer extends Server
 
     try
       client = new clientClass(options)
-      @logger.info("#{@constructor.name}: New connection from `#{client.address}`")
     catch e
       @logger.error("#{@constructor.name}: Couldn't create client connection for `#{socket.remoteAddress}:#{socket.remotePort}`")
-      @logger.debug(e.stack)
-      client.dispose() if client
+      @logger.error(e.stack)
       session.dispose()
+      socket.end()
       return
 
     client

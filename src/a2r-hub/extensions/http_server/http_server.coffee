@@ -26,8 +26,6 @@ class HttpServer extends hub.net.HttpServer
   onWebSocketConnection: (socket)->
     _socket = socket._socket
 
-    @logger.info("WebSocket client connected from '#{_socket.remoteAddress}:#{_socket.remotePort}'")
-
     session = @hub.createSession()
 
     # create new websocket client
@@ -41,12 +39,11 @@ class HttpServer extends hub.net.HttpServer
 
     try
       client = new WebSocketClient(options)
-      @logger.info("New WebSocket connection from `#{client.address}`")
     catch e
       @logger.error("HttpServer: Couldn't create WebSocket client connection for `#{_socket.remoteAddress}:#{_socket.remotePort}`")
-      @logger.debug(e.stack)
-      client.dispose() if client
+      @logger.error(e.stack)
       session.dispose()
+      socket.end()
       return
     
     client
