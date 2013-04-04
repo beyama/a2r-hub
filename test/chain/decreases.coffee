@@ -8,6 +8,8 @@ describe "a2rHub.Chain::decreases", ->
   node  = null
   chain = null
 
+  send = (msg)-> node.emit("message", msg)
+
   beforeEach ->
     hub = new Hub
     node = hub.createNode("/test")
@@ -23,7 +25,7 @@ describe "a2rHub.Chain::decreases", ->
       called++
 
     for i in [0..9]
-      chain.handle new osc.Message("/test", i % 3)
+      send new osc.Message("/test", i % 3)
       lastValue = i % 3
 
     called.should.be.equal 3
@@ -38,7 +40,7 @@ describe "a2rHub.Chain::decreases", ->
       called++
 
     for i in [0..9]
-      chain.handle new osc.Message("/test", [5, i % 3])
+      send new osc.Message("/test", [5, i % 3])
       lastValue = i % 3
 
     called.should.be.equal 3
