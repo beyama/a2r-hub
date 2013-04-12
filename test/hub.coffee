@@ -92,8 +92,8 @@ describe "Hub", ->
 
   describe ".Node", ->
     describe "constructor", ->
-      it "should emit `created`", (done)->
-        hub.nodeObserver.on "/a2r/node", "created", (node)->
+      it "should emit `create`", (done)->
+        hub.nodeObserver.on "/a2r/node", "create", (node)->
           node.address.should.be.equal "/a2r/node"
           done()
 

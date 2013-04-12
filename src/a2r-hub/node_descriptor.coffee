@@ -39,8 +39,8 @@ class NodeDescriptor
     # clone desc
     desc = _.extend({}, desc)
 
-    if desc.min and desc.max
-      assert(desc.min < desc.max, "Descriptor min must be less than max")
+    if desc.minimum and desc.maximum
+      assert(desc.minimum < desc.maximum, "Descriptor minimum must be less than maximum")
 
     desc.index = index
 
@@ -52,6 +52,9 @@ class NodeDescriptor
     @
 
   arguments: (descs)->
+    # getter
+    return @_arguments unless descs
+
     for desc, i in descs
       @argument(i, desc)
     @

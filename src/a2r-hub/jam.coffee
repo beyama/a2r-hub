@@ -18,7 +18,7 @@ class Jam extends BaseObject
     @description = description
     @context     = @hub.context
     @logger      = @context.get("logger")
-    @root        = @hub.createNode("/#{@name}")
+    @root        = @owner.createNode("/#{@name}")
     @nodes       = {}
 
     @participants = []

@@ -30,7 +30,7 @@ class NodeObserver
   once: (address, event, listener)->
     @_checkArgs(address, event, listener)
     emitter = @addresses[address] ||= new EventEmitter
-    emitter.once("event", listener)
+    emitter.once(event, listener)
 
   # Remove a listener from the listener array for the specified event on the specified node.
   removeListener: (address, event, listener)->
@@ -61,9 +61,9 @@ class Node extends Tree.Node
   constructor: ->
     super
 
-    # We emit `created` at this point to call all node observer listeners which
-    # are registerd for this.address and the `created` event.
-    @emit("created", @)
+    # We emit `create` at this point to call all node observer listeners which
+    # are registerd for this.address and the `create` event.
+    @emit("create", @)
 
   # extend the class with properties
   # of the object

@@ -65,14 +65,22 @@ class JamService
         fn(null, ret)
 
   dispose: ->
+    for n, jam of @jams
+      jam.dispose()
 
   getJam: (jamName)-> @jams[jamName]
+
+  onJamDispose: (jam)=> delete @jams[jam.name]
 
   createJam: (session, name, title, description)->
     if @jams[name]?
       throw new Error("Jam `#{name}` already exist")
 
     @jams[name] = jam = new Jam(session, name, title, description)
+
+    jam.on("dispose", @onJamDispose)
+
+    @hub.emit("jam", jam)
     jam
 
 module.exports = JamService

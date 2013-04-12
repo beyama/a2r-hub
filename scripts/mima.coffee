@@ -16,7 +16,11 @@ module.exports = (hub)->
     hub.context.get("connectionService").createClient "udp+brandt://127.0.0.1:3002", (err, pd)=>
       # connect nodes on message event with pd
       masterChannel.on "message", (msg)->
-        pd.sendFUDI("master_channel", "iiiiiiiiii", msg.arguments)
+        values = msg.arguments[0..-1]
+        values.unshift("master_channel")
+        pd.sendFUDI(values)
 
       mimaSpinner.on "message", (msg)->
-        pd.sendFUDI("mima_spinner", "f", msg.arguments)
+        values = msg.arguments[0..-1]
+        values.unshift("mima_spinner")
+        pd.sendFUDI(values)

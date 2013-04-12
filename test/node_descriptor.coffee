@@ -41,8 +41,8 @@ describe "a2rHub.NodeDescriptor", ->
       desc.arg(0, name: "x", type: "i")
       (-> desc.arg(1, name: "x", type: "i") ).should.throw()
 
-    it "should throw an error if option min isn't less than option max", ->
-      (-> desc.arg(0, type: "i", min: 12, max: 1) ).should.throw()
+    it "should throw an error if option minimum isn't less than option maximum", ->
+      (-> desc.arg(0, type: "i", minimum: 12, maximum: 1) ).should.throw()
 
     it "should set index on descriptor", ->
       desc.arg(0, type: "i")
