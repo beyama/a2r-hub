@@ -5,13 +5,23 @@ utils = require "./utils"
 class Commands extends a2rHub.BaseObject
   constructor: (client)->
     super(client)
-    @nodeBySym  = {}
-    @logger     = @parent.logger
-    @session    = @parent.session
-    @jamService = @parent.context.get("jamService")
+    @nodeBySym    = {}
+    @symByAddress = {}
+    @logger       = @parent.logger
+    @session      = @parent.session
+    @jamService   = @parent.context.get("jamService")
 
   dispose: ->
-    @jam.dispose() if @jam
+    # dispose jam if jam is owned by the client
+    if @jam and @jam.owner is @session
+      @jam.dispose()
+    # else dispose nodes which are created by the client
+    else
+      for sym, node of @nodeBySym
+        if node.owner is @session
+          node.dispose()
+        else
+          node.removeListener("dispose", @onNodeDispose)
     super
 
   # Dispatcher method, handles a list of parsed fudi messages.
@@ -21,14 +31,45 @@ class Commands extends a2rHub.BaseObject
       if typeof @[sym] is "function"
         @[sym].apply(@, message[1..-1])
       # TODO: else look for node by sym and set values on node
-  
-  # Create a new jam session for patch
-  patch: (name)->
-    @jam.dispose() if @jam
-    @jam = @jamService.createJam(@session, name)
 
-  # Add a new OSC node which transforms a received OSC message
-  # to FUDI and sends the FUDI message to PD.
+  # Transforms an OSC message to FUDI and send it to the client
+  handleOSC: (message)->
+    sym = @symByAddress[message.address]
+
+    return false unless sym
+
+    fudi = [sym]
+    fudi.push.apply(fudi, message.arguments)
+    @parent.sendFUDI(fudi)
+
+  # Handle node dispose event
+  onNodeDispose: (node)=>
+    sym = @symByAddress[node.address]
+    delete @nodeBySym[sym] if sym
+    delete @symByAddress[node.address]
+  
+  # Create or join a jam
+  patch: (name)->
+    # get jam by name if @jam is undefined
+    @jam ||= @jamService.getJam(name)
+
+    if @jam
+      # leave jam
+      @jam.leave(@session)
+
+      # dispose jam if jam is created by the client
+      if @jam.owner is @session
+        @jam.dispose()
+        @jam = null
+      else if @jam.name isnt name
+        @jam = @jamService.getJam(name)
+
+    # create jam if not exist
+    @jam ||= @jamService.createJam(@session, name)
+    # (re-)join jam
+    @jam.join(@session)
+
+  # Create a new OSC node
   add: (sym, typeTag)->
     return unless @jam
 
@@ -37,6 +78,13 @@ class Commands extends a2rHub.BaseObject
     return unless address
     return if @nodeBySym[sym]
 
+    if (node = @jam.getNode(address))
+      @nodeBySym[sym] = node
+      @symByAddress[node.address] = sym
+      node.on("dispose", @onNodeDispose)
+      return
+
+    # create node
     args = []
     if typeTag
       l = typeTag.length
@@ -51,16 +99,15 @@ class Commands extends a2rHub.BaseObject
             throw new Error("Unsupported type `#{char}`")
 
     @nodeBySym[sym] = node = @jam.createNode(@session, address, args: args)
+    @symByAddress[node.address] = sym
+
+    # configure node chain (session lock of 500ms and set values)
+    node.chain().lock(500).set()
+
     @logger.info("#{@parent.constructor.name} `#{@parent.address}` node `#{address}` added")
 
-    # register message handler
-    node.on "message", (message)=>
-      values = message.arguments[0..-1]
-      values.unshift(sym)
-      @parent.sendFUDI(values)
-
     # register node dispose handler
-    node.on "dispose", => delete @nodeBySym[sym]
+    node.on("dispose", @onNodeDispose)
 
   # Remove a bunch of nodes.
   remove: (sym)->
@@ -73,6 +120,8 @@ class Commands extends a2rHub.BaseObject
   inport: (inport)-> @parent.setOutport(inport) if @parent.setOutport
 
   # Set an stream address on the jam session
-  stream: (address)-> @jam.stream = address
+  stream: (address)->
+    return false unless @jam
+    @jam.stream = address
 
 module.exports = Commands

@@ -11,10 +11,19 @@ class BrandtUdpClient extends hub.net.UdpClient
   constructor: (options)->
     super(options)
     @commands = new Commands(@)
-
-  initAsServerClient: ->
-    super
     @on("message", @onMessage.bind(@))
+
+  initAsClient: ->
+    super
+    # delegate socket message event to client message event
+    @socket.on("message", (message)=> @emit("message", message))
+
+  sendOSC: (message)->
+    if message.elements?
+      for m in message.elements
+        @sendOSC(m)
+    else
+      @commands.handleOSC(message)
 
   sendFUDI: (values)->
     fudi = generateFUDI(values)
