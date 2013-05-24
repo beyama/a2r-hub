@@ -1,3 +1,5 @@
+assert = require "assert"
+
 Chain = require "../chain"
 
 # Adds a filter to chain that only triggers the next
@@ -18,7 +20,7 @@ Chain::crosses = (index, value, direction="any")->
     assert(arg, "Can't find argument by name `#{index}`")
     index = arg.index
 
-  lastValue = null
+  lastValue = @node.values?[index]
 
   # add step to chain
   @step switch direction

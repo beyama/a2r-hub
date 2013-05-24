@@ -44,3 +44,23 @@ describe "a2rHub.Chain::increases", ->
       lastValue = i % 3
 
     called.should.be.equal 6
+
+  it "should allow to specify a named argument to watch", ->
+    node.args [
+      { type: "integer" },
+      { type: "integer", name: "foo" },
+    ]
+
+    called = 0
+
+    lastValue = 0
+
+    chain.increases("foo").step (msg)->
+      should.ok msg.arguments[1] > lastValue
+      called++
+
+    for i in [0..9]
+      send new osc.Message("/test", [56, i % 3])
+      lastValue = i % 3
+
+    called.should.be.equal 6

@@ -54,7 +54,7 @@ class JamService
         unless layout
           return fn("Layout `#{layoutName}` not found")
 
-        fn(null, layout)
+        fn(null, layout.toJSON())
 
       join: (jamName, layoutName, fn)->
         jam = j.getJam(jamName)

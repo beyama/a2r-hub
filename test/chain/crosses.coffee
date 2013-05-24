@@ -13,6 +13,24 @@ describe "a2rHub.Chain::crosses", ->
     node = hub.createNode("/test")
     chain = node.chain()
 
+  it "should allow to specify the argument by name", ->
+    node.set(null, [0, 0])
+
+    node.args [
+      { type: "float" },
+      { type: "float", name: "foo" },
+    ]
+
+    called = 0
+    chain
+      .crosses("foo", 0.5, "up")
+      .step (msg)->
+        msg.arguments[1].should.be.equal 0.6
+        called++
+
+    node.emit("message", new osc.Message("/test", [1, 0.6]))
+    called.should.be.equal 1
+
   describe "with direction up", ->
 
     it "should only pass message to next function in chain if the value crosses 0.5 upwards", ->

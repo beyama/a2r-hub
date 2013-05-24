@@ -46,3 +46,24 @@ describe "a2rHub.Chain::fromPositiveToZero", ->
       lastValue = i % 3
 
     called.should.be.equal 3
+
+  it "should allow to specify a named parameter to watch", ->
+    called = 0
+
+    lastValue = 0
+
+    node.args [
+      { type: "integer" },
+      { type: "integer", name: "foo" },
+    ]
+
+    chain.fromPositiveToZero("foo").step (msg)->
+      should.ok lastValue > 0
+      msg.arguments[1].should.be.equal 0
+      called++
+
+    for i in [0..9]
+      send new osc.Message("/test", [12, i % 3])
+      lastValue = i % 3
+
+    called.should.be.equal 3

@@ -1,3 +1,5 @@
+assert = require "assert"
+
 Chain = require "../chain"
 
 # Adds a filter to chain that only triggers the next

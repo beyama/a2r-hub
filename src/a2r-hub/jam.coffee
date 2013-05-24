@@ -1,6 +1,7 @@
 BaseObject = require "./base_object"
 address    = require "./address"
 Hub        = require "./hub"
+Layout     = require "./layout"
 osc        = Hub.osc
 
 class Jam extends BaseObject
@@ -20,6 +21,7 @@ class Jam extends BaseObject
     @logger      = @context.get("logger")
     @root        = @owner.createNode("/#{@name}")
     @nodes       = {}
+    @layouts     = []
 
     @participants = []
 
@@ -74,6 +76,11 @@ class Jam extends BaseObject
   onNodeDispose: (node)=> delete @nodes[node.address]
 
   getNode: (address)-> @nodes["/#{@name}#{address}"]
+
+  createLayout: (options)->
+    layout = new Layout(options)
+    @layouts.push(layout)
+    layout
 
   dispose: ->
     @root.dispose()

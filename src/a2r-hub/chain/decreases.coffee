@@ -1,3 +1,5 @@
+assert = require "assert"
+
 Chain = require "../chain"
 
 # Adds a filter to chain that only triggers the next
@@ -11,7 +13,7 @@ Chain::decreases = (index=0)->
     assert(arg, "Can't find argument by name `#{index}`")
     index = arg.index
 
-  lastValue = null
+  lastValue = @node.values?[index]
   currentValue = null
 
   @step (message, next)->
