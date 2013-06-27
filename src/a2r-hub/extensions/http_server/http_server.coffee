@@ -1,5 +1,9 @@
 hub = require "../../"
 
+mdns = undefined
+
+try mdns = require "mdns"
+
 WebSocketServer = require("ws").Server
 WebSocketClient = require("./web_socket_client")
 
@@ -8,6 +12,14 @@ class HttpServer extends hub.net.HttpServer
 
   constructor: (options)->
     super(options)
+
+    if mdns? and @options.mdns
+      @on "listening", =>
+        @ad = mdns.createAdvertisement(mdns.tcp("a2r-osc"), @port)
+        @ad.start()
+
+      @on "close", =>
+        @ad.stop()
 
   initSocket: ->
     super
