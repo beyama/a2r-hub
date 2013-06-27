@@ -64,6 +64,14 @@ class JamService
         ret = jam.join(@connection.session)
         fn(null, ret)
 
+      leave: (jamName, layoutName, fn)->
+        jam = j.getJam(jamName)
+
+        return fn("Jam `#{jamName}` not found") unless jam
+
+        ret = jam.leave(@connection.session)
+        fn(null, ret)
+
   dispose: ->
     for n, jam of @jams
       jam.dispose()

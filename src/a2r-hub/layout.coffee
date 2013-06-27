@@ -203,8 +203,8 @@ class Spinner extends Element
   constructor: (group, attrs)->
     super
     @attrs.type ||= "Spinner"
-    @attrs.cols ||= 1
-    @attrs.rows ||= 1
+    @attrs.cols ||= 12
+    @attrs.rows ||= 12
 
 Layout.Element = Element
 Layout.Knob    = Knob
