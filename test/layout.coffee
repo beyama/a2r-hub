@@ -208,5 +208,5 @@ describe "a2rHub.Layout", ->
 
       it "should set decent defaults", ->
         s = section.spinner()
-        s.attrs.cols.should.be.equal 1
-        s.attrs.rows.should.be.equal 1
+        s.attrs.cols.should.be.equal 12
+        s.attrs.rows.should.be.equal 12
