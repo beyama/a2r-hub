@@ -163,6 +163,13 @@ class Element
 
   up: -> @group
 
+class Space extends Element
+  constructor: (group, attrs)->
+    super
+    @attrs.type    ||= "Space"
+    @attrs.cols    ||= 1
+    @attrs.rows    ||= 1
+
 class Knob extends Element
   constructor: (group, attrs)->
     super
@@ -210,6 +217,7 @@ Layout.Element = Element
 Layout.Knob    = Knob
 Layout.Text    = Text
 
+Layout.registerElement "space", Space
 Layout.registerElement "knob", Knob
 Layout.registerElement "text", Text
 Layout.registerElement "adsr", Adsr
